@@ -183,10 +183,11 @@ func (s *Server) selectProvider(modelName string) *config.Provider {
 	
 	// Try to match provider by name in model
 	for i := range s.config.Providers {
-		if modelName != "" && len(s.config.Providers[i].Name) > 0 {
-			// Simple substring match
-			if len(modelName) >= len(s.config.Providers[i].Name) &&
-				modelName[:len(s.config.Providers[i].Name)] == s.config.Providers[i].Name {
+		providerName := s.config.Providers[i].Name
+		if modelName != "" && providerName != "" {
+			// Simple substring match - check length first to avoid panic
+			if len(modelName) >= len(providerName) &&
+				modelName[:len(providerName)] == providerName {
 				return &s.config.Providers[i]
 			}
 		}
@@ -198,8 +199,14 @@ func (s *Server) selectProvider(modelName string) *config.Provider {
 
 // forwardToProvider forwards a request to the specified provider
 func (s *Server) forwardToProvider(provider *config.Provider, endpoint string, request interface{}) (interface{}, error) {
-	// This is a placeholder for actual provider forwarding logic
-	// In a real implementation, this would make HTTP requests to the provider's API
+	// NOTE: This is a placeholder implementation that returns mock data
+	// In a production system, this would:
+	// 1. Retrieve the API key from the secret store
+	// 2. Make an HTTP request to provider.Endpoint + endpoint
+	// 3. Forward the request with proper authentication headers
+	// 4. Return the actual provider response
+	
+	log.Printf("NOTE: Forwarding to %s is not yet implemented. Returning mock response.", provider.Name)
 	
 	return map[string]interface{}{
 		"id":      fmt.Sprintf("arbiter-%d", time.Now().Unix()),
@@ -211,10 +218,15 @@ func (s *Server) forwardToProvider(provider *config.Provider, endpoint string, r
 				"index": 0,
 				"message": map[string]interface{}{
 					"role":    "assistant",
-					"content": fmt.Sprintf("Response from %s provider (forwarding logic to be implemented)", provider.Name),
+					"content": fmt.Sprintf("Mock response from %s provider. Forwarding logic needs to be implemented for production use.", provider.Name),
 				},
 				"finish_reason": "stop",
 			},
+		},
+		"usage": map[string]interface{}{
+			"prompt_tokens":     0,
+			"completion_tokens": 0,
+			"total_tokens":      0,
 		},
 	}, nil
 }

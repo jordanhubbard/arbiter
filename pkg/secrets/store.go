@@ -144,8 +144,20 @@ func (s *Store) decrypt(ciphertext string) (string, error) {
 func deriveKey() []byte {
 	// Use hostname and user info to derive a key
 	// This is a simple approach; in production, consider using OS keychain
-	hostname, _ := os.Hostname()
-	homeDir, _ := os.UserHomeDir()
+	hostname, err := os.Hostname()
+	if err != nil {
+		// Fall back to a constant if hostname cannot be determined
+		hostname = "unknown-host"
+	}
+	
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		// Fall back to current working directory if home cannot be determined
+		homeDir, _ = os.Getwd()
+		if homeDir == "" {
+			homeDir = "unknown-home"
+		}
+	}
 	
 	data := hostname + homeDir
 	hash := sha256.Sum256([]byte(data))

@@ -17,7 +17,7 @@ Arbiter is a lightweight AI coding agent orchestrator, dispatcher, and automatic
 
 ### Prerequisites
 
-- Go 1.21 or higher
+- Go 1.21 or higher (tested with Go 1.24)
 
 ### Build from Source
 
