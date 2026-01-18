@@ -27,6 +27,11 @@ go.work.sum
 # env file
 .env
 
+# Arbiter specific
+.arbiter.json
+.arbiter_secrets
+arbiter
+
 # Editor/IDE
 # .idea/
 # .vscode/
