@@ -102,8 +102,11 @@ When contributing to this project:
 
 1. Ensure all code follows the architecture principles above
 2. All new features must be containerized
-3. Update documentation for any new features or changes
-4. Run tests and linters before submitting changes
+3. **File a bead for your work** - See [BEADS_WORKFLOW.md](BEADS_WORKFLOW.md)
+4. Update documentation for any new features or changes
+5. Run tests and linters before submitting changes
+
+For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 An AI Coding Agent Orchestrator for both on-prem and off-prem development.
 
 Arbiter is a lightweight AI coding agent orchestrator, dispatcher, and automatic decision maker. Instead of being just another frontend to systems like Claude or Cursor, Arbiter intelligently routes requests to multiple AI providers and presents a unified OpenAI-compatible API.

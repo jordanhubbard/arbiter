@@ -1,0 +1,54 @@
+# Arbiter Configuration
+
+server:
+  http_port: 8080
+  https_port: 8443
+  enable_http: true
+  enable_https: false
+  tls_cert_file: ""  # Path to TLS certificate (when ready)
+  tls_key_file: ""   # Path to TLS key (when ready)
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120s
+
+database:
+  type: sqlite
+  path: ./arbiter.db
+
+beads:
+  bd_path: bd  # Path to bd executable
+  auto_sync: true
+  sync_interval: 5m
+  compact_old_days: 90  # Compact closed beads older than 90 days
+
+agents:
+  max_concurrent: 10
+  default_persona_path: ./personas
+  heartbeat_interval: 30s
+  file_lock_timeout: 10m
+
+security:
+  enable_auth: true
+  pki_enabled: false  # Will be enabled when certificates are provided
+  ca_file: ""
+  require_https: false
+  allowed_origins:
+    - "*"  # CORS - adjust in production
+  # api_keys:
+  #   - "your-api-key-here"
+
+projects:
+  - id: arbiter
+    name: Arbiter Repository
+    git_repo: /home/runner/work/arbiter/arbiter
+    branch: copilot/initialize-beads-system
+    beads_path: .beads
+    context:
+      build_command: "make build"
+      test_command: "make test"
+      lint_command: "make lint"
+
+web_ui:
+  enabled: true
+  static_path: ./web/static
+  refresh_interval: 5  # seconds
