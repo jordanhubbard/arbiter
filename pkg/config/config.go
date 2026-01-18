@@ -1,21 +1,33 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/jordanhubbard/arbiter/pkg/secrets"
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the main configuration for the arbiter system
+// Config represents the main configuration for the arbiter system.
+// It supports both YAML-based configuration (for file-based config using LoadConfigFromFile)
+// and JSON-based configuration (for user-specific config using LoadConfig).
 type Config struct {
-	Server      ServerConfig      `yaml:"server"`
-	Database    DatabaseConfig    `yaml:"database"`
-	Beads       BeadsConfig       `yaml:"beads"`
-	Agents      AgentsConfig      `yaml:"agents"`
-	Security    SecurityConfig    `yaml:"security"`
-	Projects    []ProjectConfig   `yaml:"projects"`
-	WebUI       WebUIConfig       `yaml:"web_ui"`
+	// YAML/File-based configuration fields
+	Server      ServerConfig      `yaml:"server" json:"server,omitempty"`
+	Database    DatabaseConfig    `yaml:"database" json:"database,omitempty"`
+	Beads       BeadsConfig       `yaml:"beads" json:"beads,omitempty"`
+	Agents      AgentsConfig      `yaml:"agents" json:"agents,omitempty"`
+	Security    SecurityConfig    `yaml:"security" json:"security,omitempty"`
+	Projects    []ProjectConfig   `yaml:"projects" json:"projects,omitempty"`
+	WebUI       WebUIConfig       `yaml:"web_ui" json:"web_ui,omitempty"`
+	
+	// JSON/User-specific configuration fields
+	Providers   []Provider        `yaml:"providers,omitempty" json:"providers"`
+	ServerPort  int               `yaml:"server_port,omitempty" json:"server_port"`
+	SecretStore *secrets.Store    `yaml:"-" json:"-"`
 }
 
 // ServerConfig configures the HTTP/HTTPS server
@@ -82,8 +94,9 @@ type WebUIConfig struct {
 	RefreshInterval int    `yaml:"refresh_interval"` // seconds
 }
 
-// LoadConfig loads configuration from a YAML file
-func LoadConfig(path string) (*Config, error) {
+// LoadConfigFromFile loads configuration from a YAML file at the specified path.
+// This is typically used for loading system-wide or project-specific configuration.
+func LoadConfigFromFile(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -95,6 +108,34 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// LoadConfig loads user-specific configuration from the default JSON config file.
+// This is typically used for loading user preferences and provider settings.
+// The config file is stored at ~/.arbiter.json
+func LoadConfig() (*Config, error) {
+	configPath, err := getConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	// Initialize secret store
+	cfg.SecretStore = secrets.NewStore()
+	if err := cfg.SecretStore.Load(); err != nil {
+		return nil, fmt.Errorf("failed to load secrets: %w", err)
+	}
+
+	return &cfg, nil
 }
 
 // DefaultConfig returns a default configuration
@@ -137,4 +178,84 @@ func DefaultConfig() *Config {
 			RefreshInterval: 5,
 		},
 	}
+}
+
+const (
+	configFileName = ".arbiter.json"
+)
+
+// Provider represents an AI service provider configuration
+type Provider struct {
+	Name     string `json:"name"`
+	Endpoint string `json:"endpoint"`
+}
+
+// NewConfig creates a new configuration with default values
+func NewConfig() *Config {
+	return &Config{
+		Providers:   []Provider{},
+		ServerPort:  8080,
+		SecretStore: secrets.NewStore(),
+	}
+}
+
+// SaveConfig saves configuration to the config file
+func SaveConfig(cfg *Config) error {
+	configPath, err := getConfigPath()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
+		return err
+	}
+
+	// Save secrets separately
+	if cfg.SecretStore != nil {
+		if err := cfg.SecretStore.Save(); err != nil {
+			return fmt.Errorf("failed to save secrets: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// getConfigPath returns the path to the configuration file
+func getConfigPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, configFileName), nil
+}
+
+// LookupProviderEndpoint attempts to find the API endpoint for a provider
+func LookupProviderEndpoint(providerName string) (string, error) {
+	// Map of known providers to their default endpoints
+	knownProviders := map[string]string{
+		"claude":      "https://api.anthropic.com/v1",
+		"openai":      "https://api.openai.com/v1",
+		"cursor":      "https://api.cursor.sh/v1",
+		"factory":     "https://api.factory.ai/v1",
+		"cohere":      "https://api.cohere.ai/v1",
+		"huggingface": "https://api-inference.huggingface.co",
+		"replicate":   "https://api.replicate.com/v1",
+		"together":    "https://api.together.xyz/v1",
+		"mistral":     "https://api.mistral.ai/v1",
+		"perplexity":  "https://api.perplexity.ai",
+	}
+
+	// Check if we have a known endpoint
+	if endpoint, ok := knownProviders[providerName]; ok {
+		return endpoint, nil
+	}
+
+	// For unknown providers, we would use Google's Custom Search API here
+	// For now, return an error to prompt for manual entry
+	return "", fmt.Errorf("unknown provider: %s", providerName)
 }
