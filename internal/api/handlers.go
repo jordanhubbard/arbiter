@@ -2,8 +2,15 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
+	"github.com/google/uuid"
+	internalmodels "github.com/jordanhubbard/arbiter/internal/models"
+	"github.com/jordanhubbard/arbiter/internal/storage"
 	"github.com/jordanhubbard/arbiter/pkg/models"
 )
 
@@ -183,10 +190,20 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleProject handles GET /api/v1/projects/{id}
+// handleProject handles GET /api/v1/projects/{id} and state management endpoints
 func (s *Server) handleProject(w http.ResponseWriter, r *http.Request) {
-	id := s.extractID(r.URL.Path, "/api/v1/projects")
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/projects/")
+	parts := strings.Split(path, "/")
+	id := parts[0]
 
+	// Handle sub-endpoints for project state management
+	if len(parts) > 1 {
+		action := parts[1]
+		s.handleProjectStateEndpoints(w, r, id, action)
+		return
+	}
+
+	// Default GET behavior
 	switch r.Method {
 	case http.MethodGet:
 		project, err := s.arbiter.GetProjectManager().GetProject(id)

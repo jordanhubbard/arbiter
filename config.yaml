@@ -37,34 +37,16 @@ security:
   # api_keys:
   #   - "your-api-key-here"
 
-temporal:
-  host: localhost:7233
-  namespace: arbiter-default
-  task_queue: arbiter-tasks
-  workflow_execution_timeout: 24h
-  workflow_task_timeout: 10s
-  enable_event_bus: true
-  event_buffer_size: 1000
-
 projects:
-  - id: arbiter-self
-    name: Arbiter Self-Improvement
-    git_repo: https://github.com/jordanhubbard/arbiter
-    branch: main
-    beads_path: .beads
-    is_perpetual: true
-    context:
-      build_command: "go build"
-      test_command: "go test ./..."
-      description: "The Arbiter project itself - perpetual self-improvement"
-  - id: example-project
-    name: Example Project
-    git_repo: /path/to/repo
-    branch: main
+  - id: arbiter
+    name: Arbiter Repository
+    git_repo: /home/runner/work/arbiter/arbiter
+    branch: copilot/initialize-beads-system
     beads_path: .beads
     context:
       build_command: "make build"
       test_command: "make test"
+      lint_command: "make lint"
 
 web_ui:
   enabled: true
