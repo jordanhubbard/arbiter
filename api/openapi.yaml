@@ -1,0 +1,778 @@
+openapi: 3.0.3
+info:
+  title: Arbiter API
+  description: |
+    The Arbiter API provides programmatic access to the agent orchestration system.
+    
+    ## Authentication
+    
+    API requests must include an API key in the `X-API-Key` header when authentication is enabled.
+    
+    ## Security
+    
+    - All production deployments should use HTTPS
+    - PKI/TLS certificates can be configured for mutual TLS authentication
+    - API keys should be rotated regularly
+    
+  version: 1.0.0
+  contact:
+    name: Arbiter Support
+    url: https://github.com/jordanhubbard/arbiter
+
+servers:
+  - url: https://localhost:8443
+    description: HTTPS server (production)
+  - url: http://localhost:8080
+    description: HTTP server (development only)
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/v1/health:
+    get:
+      summary: Health check
+      description: Check if the API is running
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/v1/personas:
+    get:
+      summary: List all personas
+      description: Get a list of all available agent personas
+      responses:
+        '200':
+          description: List of personas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Persona'
+
+  /api/v1/personas/{name}:
+    get:
+      summary: Get a specific persona
+      description: Retrieve details of a specific persona
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Persona details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '404':
+          description: Persona not found
+
+    put:
+      summary: Update a persona
+      description: Update an existing persona (live editing)
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Persona'
+      responses:
+        '200':
+          description: Persona updated successfully
+        '400':
+          description: Invalid request
+        '404':
+          description: Persona not found
+
+  /api/v1/agents:
+    get:
+      summary: List all agents
+      description: Get a list of all running agents
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agent'
+
+    post:
+      summary: Create a new agent
+      description: Spawn a new agent with a specified persona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - persona_name
+                - project_id
+              properties:
+                name:
+                  type: string
+                  description: Optional custom name for the agent
+                persona_name:
+                  type: string
+                  description: Name of the persona to use
+                project_id:
+                  type: string
+                  description: ID of the project to work on
+      responses:
+        '201':
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: Invalid request
+
+  /api/v1/agents/{id}:
+    get:
+      summary: Get agent details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Agent not found
+
+    delete:
+      summary: Stop an agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Agent stopped
+        '404':
+          description: Agent not found
+
+  /api/v1/projects:
+    get:
+      summary: List all projects
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+
+    post:
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /api/v1/projects/{id}:
+    get:
+      summary: Get project details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /api/v1/beads:
+    get:
+      summary: List beads
+      description: Get a list of beads, optionally filtered by status, priority, or project
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_progress, blocked, closed]
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [task, decision, epic]
+      responses:
+        '200':
+          description: List of beads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bead'
+
+    post:
+      summary: Create a new bead
+      description: Create a new work item or decision bead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeadCreate'
+      responses:
+        '201':
+          description: Bead created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bead'
+
+  /api/v1/beads/{id}:
+    get:
+      summary: Get bead details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bead details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bead'
+
+    patch:
+      summary: Update bead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeadUpdate'
+      responses:
+        '200':
+          description: Bead updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bead'
+
+  /api/v1/beads/{id}/claim:
+    post:
+      summary: Claim a bead
+      description: Assign a bead to an agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agent_id
+              properties:
+                agent_id:
+                  type: string
+      responses:
+        '200':
+          description: Bead claimed
+        '409':
+          description: Bead already claimed
+
+  /api/v1/decisions:
+    get:
+      summary: List decision beads
+      description: Get all decision beads that need resolution
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, claimed, resolved]
+        - name: priority
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1, 2, 3]
+      responses:
+        '200':
+          description: List of decision beads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionBead'
+
+  /api/v1/decisions/{id}/decide:
+    post:
+      summary: Make a decision
+      description: Resolve a decision bead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+                - rationale
+              properties:
+                decider_id:
+                  type: string
+                decision:
+                  type: string
+                rationale:
+                  type: string
+      responses:
+        '200':
+          description: Decision made
+        '404':
+          description: Decision bead not found
+
+  /api/v1/file-locks:
+    get:
+      summary: List file locks
+      description: Get all current file locks
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of file locks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileLock'
+
+    post:
+      summary: Request file lock
+      description: Request exclusive access to a file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+                - project_id
+                - agent_id
+              properties:
+                file_path:
+                  type: string
+                project_id:
+                  type: string
+                agent_id:
+                  type: string
+                bead_id:
+                  type: string
+      responses:
+        '201':
+          description: Lock acquired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileLock'
+        '409':
+          description: File already locked
+
+  /api/v1/file-locks/{project_id}/{path}:
+    delete:
+      summary: Release file lock
+      description: Release a file lock
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Lock released
+        '404':
+          description: Lock not found
+
+  /api/v1/work-graph:
+    get:
+      summary: Get work graph
+      description: Get the complete dependency graph of beads
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Work graph
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkGraph'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Persona:
+      type: object
+      properties:
+        name:
+          type: string
+        character:
+          type: string
+        tone:
+          type: string
+        focus_areas:
+          type: array
+          items:
+            type: string
+        autonomy_level:
+          type: string
+          enum: [full, semi, supervised]
+        capabilities:
+          type: array
+          items:
+            type: string
+        decision_making:
+          type: string
+        housekeeping:
+          type: string
+        collaboration:
+          type: string
+        standards:
+          type: array
+          items:
+            type: string
+        mission:
+          type: string
+        personality:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        persona_name:
+          type: string
+        status:
+          type: string
+          enum: [idle, working, deciding, blocked]
+        current_bead:
+          type: string
+        project_id:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        last_active:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        git_repo:
+          type: string
+        branch:
+          type: string
+        beads_path:
+          type: string
+        context:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        agents:
+          type: array
+          items:
+            type: string
+
+    ProjectCreate:
+      type: object
+      required:
+        - name
+        - git_repo
+        - branch
+      properties:
+        name:
+          type: string
+        git_repo:
+          type: string
+        branch:
+          type: string
+        beads_path:
+          type: string
+          default: .beads
+        context:
+          type: object
+          additionalProperties:
+            type: string
+
+    Bead:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [task, decision, epic]
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, blocked, closed]
+        priority:
+          type: integer
+          enum: [0, 1, 2, 3]
+        project_id:
+          type: string
+        assigned_to:
+          type: string
+        blocked_by:
+          type: array
+          items:
+            type: string
+        blocks:
+          type: array
+          items:
+            type: string
+        related_to:
+          type: array
+          items:
+            type: string
+        parent:
+          type: string
+        children:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        context:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+
+    BeadCreate:
+      type: object
+      required:
+        - title
+        - project_id
+      properties:
+        type:
+          type: string
+          enum: [task, decision, epic]
+          default: task
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: integer
+          enum: [0, 1, 2, 3]
+          default: 2
+        project_id:
+          type: string
+        parent:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        context:
+          type: object
+          additionalProperties:
+            type: string
+
+    BeadUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, in_progress, blocked, closed]
+        assigned_to:
+          type: string
+        description:
+          type: string
+        context:
+          type: object
+          additionalProperties:
+            type: string
+
+    DecisionBead:
+      allOf:
+        - $ref: '#/components/schemas/Bead'
+        - type: object
+          properties:
+            question:
+              type: string
+            options:
+              type: array
+              items:
+                type: string
+            recommendation:
+              type: string
+            requester_id:
+              type: string
+            decider_id:
+              type: string
+            decision:
+              type: string
+            rationale:
+              type: string
+            decided_at:
+              type: string
+              format: date-time
+
+    FileLock:
+      type: object
+      properties:
+        file_path:
+          type: string
+        project_id:
+          type: string
+        agent_id:
+          type: string
+        bead_id:
+          type: string
+        locked_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    WorkGraph:
+      type: object
+      properties:
+        beads:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Bead'
+        edges:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                type: string
+              to:
+                type: string
+              relationship:
+                type: string
+                enum: [blocks, parent, related]
+        updated_at:
+          type: string
+          format: date-time

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbiter - Agent Orchestration</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>🤖 Arbiter - Agent Orchestration System</h1>
+        <nav>
+            <a href="#kanban">Kanban Board</a>
+            <a href="#agents">Agents</a>
+            <a href="#decisions">Decisions</a>
+            <a href="#personas">Personas</a>
+            <a href="#projects">Projects</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Kanban Board Section -->
+        <section id="kanban">
+            <h2>📋 Kanban Board</h2>
+            <div class="kanban-container">
+                <div class="kanban-column">
+                    <h3>Open</h3>
+                    <div id="open-beads" class="bead-list">
+                        <!-- Beads will be loaded here -->
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <h3>In Progress</h3>
+                    <div id="in-progress-beads" class="bead-list">
+                        <!-- Beads will be loaded here -->
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <h3>Closed</h3>
+                    <div id="closed-beads" class="bead-list">
+                        <!-- Beads will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Decision Beads Section -->
+        <section id="decisions">
+            <h2>⚖️ Decision Beads</h2>
+            <div id="decision-list" class="decision-container">
+                <!-- Decision beads will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Agents Section -->
+        <section id="agents">
+            <h2>🤖 Active Agents</h2>
+            <div class="controls">
+                <button onclick="showSpawnAgentModal()">Spawn New Agent</button>
+            </div>
+            <div id="agent-list" class="agent-container">
+                <!-- Agents will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects">
+            <h2>📁 Projects</h2>
+            <div id="project-list" class="project-container">
+                <!-- Projects will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Personas Section -->
+        <section id="personas">
+            <h2>🎭 Personas</h2>
+            <div id="persona-list" class="persona-container">
+                <!-- Personas will be loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for spawning agents -->
+    <div id="spawn-agent-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSpawnAgentModal()">&times;</span>
+            <h2>Spawn New Agent</h2>
+            <form id="spawn-agent-form">
+                <label for="agent-name">Agent Name (optional):</label>
+                <input type="text" id="agent-name" name="name">
+                
+                <label for="agent-persona">Persona:</label>
+                <select id="agent-persona" name="persona_name" required>
+                    <!-- Options loaded dynamically -->
+                </select>
+                
+                <label for="agent-project">Project:</label>
+                <select id="agent-project" name="project_id" required>
+                    <!-- Options loaded dynamically -->
+                </select>
+                
+                <button type="submit">Spawn Agent</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for viewing/editing persona -->
+    <div id="persona-modal" class="modal">
+        <div class="modal-content large">
+            <span class="close" onclick="closePersonaModal()">&times;</span>
+            <h2 id="persona-modal-title">Persona Editor</h2>
+            <div id="persona-editor">
+                <!-- Persona editor will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Arbiter v1.0.0 | <a href="/api/v1/health">API Health</a> | <a href="/api/openapi.yaml">OpenAPI Spec</a></p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

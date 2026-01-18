@@ -37,9 +37,12 @@ arbiter
 # .idea/
 # .vscode/
 
-# Binary
+# Arbiter binary
 arbiter
+arbiter-*
 
-# Logs
-*.log
-nohup.out
+# Database
+*.db
+
+# Web UI build artifacts
+web/dist/
