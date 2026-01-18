@@ -58,8 +58,8 @@ type ServiceEndpoint struct {
 	Type          string    `json:"type"` // ollama, vllm, openai, anthropic, etc.
 	IsActive      bool      `json:"is_active"`
 	CostType      CostType  `json:"cost_type"`
-	CostPerToken  float64   `json:"cost_per_token,omitempty"`  // For variable cost services
-	FixedCost     float64   `json:"fixed_cost,omitempty"`      // For fixed cost services (monthly, etc.)
+	CostPerToken  float64   `json:"cost_per_token"`  // For variable cost services
+	FixedCost     float64   `json:"fixed_cost"`      // For fixed cost services (monthly, etc.)
 	TokensUsed    int64     `json:"tokens_used"`
 	TotalCost     float64   `json:"total_cost"`
 	RequestCount  int64     `json:"request_count"`

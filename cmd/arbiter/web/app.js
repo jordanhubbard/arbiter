@@ -185,12 +185,14 @@ async function loadServices() {
         container.innerHTML = services.map(service => {
             const costTypeClass = service.cost_type === 'fixed' ? 'fixed-cost' : 'variable-cost';
             const activeClass = service.is_active ? '' : 'inactive';
+            const fixedCost = service.fixed_cost || 0;
+            const costPerToken = service.cost_per_token || 0;
             const costDisplay = service.cost_type === 'fixed' 
-                ? `Fixed: $${service.fixed_cost.toFixed(2)}`
-                : `Per token: $${service.cost_per_token.toFixed(8)}`;
+                ? `Fixed: $${fixedCost.toFixed(2)}`
+                : `Per token: $${costPerToken.toFixed(8)}`;
             
             return `
-                <div class="service-item ${costTypeClass} ${activeClass}" onclick="openCostModal('${service.id}', '${escapeHtml(service.name)}', '${service.cost_type}', ${service.cost_per_token}, ${service.fixed_cost})">
+                <div class="service-item ${costTypeClass} ${activeClass}" onclick="openCostModal('${service.id}', '${escapeHtml(service.name)}', '${service.cost_type}', ${costPerToken}, ${fixedCost})">
                     <div>
                         <span class="active-indicator ${service.is_active ? 'active' : 'inactive'}"></span>
                         <strong>${escapeHtml(service.name)}</strong>

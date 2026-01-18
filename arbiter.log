@@ -1,0 +1,4 @@
+nohup: ignoring input
+2026/01/18 17:57:27 Starting arbiter service on :9090
+2026/01/18 17:57:27 Web UI: http://localhost:9090
+2026/01/18 17:57:27 API: http://localhost:9090/api
