@@ -3,7 +3,6 @@ package arbiter
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/jordanhubbard/arbiter/internal/agent"
@@ -69,7 +68,7 @@ func (a *Arbiter) Initialize(ctx context.Context) error {
 			GitRepo:     p.GitRepo,
 			Branch:      p.Branch,
 			BeadsPath:   p.BeadsPath,
-			IsPerpetual: p.IsPerpetual,
+			// IsPerpetual: p.IsPerpetual,
 			Context:     p.Context,
 		})
 	}
@@ -331,29 +330,6 @@ func (a *Arbiter) GetWorkGraph(projectID string) (*models.WorkGraph, error) {
 }
 
 // GetAgentManager returns the agent manager
-func (a *Arbiter) GetAgentManager() *agent.Manager {
-	return a.agentManager
-}
-
-// GetProjectManager returns the project manager
-func (a *Arbiter) GetProjectManager() *project.Manager {
-	return a.projectManager
-}
-
-// GetPersonaManager returns the persona manager
-func (a *Arbiter) GetPersonaManager() *persona.Manager {
-	return a.personaManager
-}
-
-// GetBeadsManager returns the beads manager
-func (a *Arbiter) GetBeadsManager() *beads.Manager {
-	return a.beadsManager
-}
-
-// GetDecisionManager returns the decision manager
-func (a *Arbiter) GetDecisionManager() *decision.Manager {
-	return a.decisionManager
-}
 
 // GetFileLockManager returns the file lock manager
 func (a *Arbiter) GetFileLockManager() *FileLockManager {

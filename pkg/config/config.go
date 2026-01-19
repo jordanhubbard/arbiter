@@ -200,3 +200,18 @@ func DefaultConfig() *Config {
 	}
 }
 
+// Provider represents an AI service provider configuration
+type Provider struct {
+	Name     string `json:"name" yaml:"name"`
+	Endpoint string `json:"endpoint" yaml:"endpoint"`
+}
+
+// getConfigPath returns the path to the user-specific configuration file
+func getConfigPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, ".arbiter.json"), nil
+}
+

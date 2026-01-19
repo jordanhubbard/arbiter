@@ -2,13 +2,9 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/jordanhubbard/arbiter/pkg/models"
 )
 
