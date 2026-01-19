@@ -11,12 +11,12 @@ define run_with_failure_bead
 	target="$(1)"; \
 	cmd='$(2)'; \
 	output=$$(mktemp); \
-	if sh -c "$$cmd" >$$output 2>&1; then \
-		cat $$output; \
+	echo "[make] $$target: $$cmd"; \
+	if bash -c 'set -o pipefail; $(2) 2>&1 | tee "$$output"'; then \
 		rm -f $$output; \
 	else \
 		status=$$?; \
-		cat $$output; \
+		echo "[make] $$target failed with exit code $$status"; \
 		bead_id="bd-$${target}-failure-$$(date -u +%Y%m%d%H%M%S)"; \
 		bead_file="$(BEADS_DIR)/$${bead_id}.yaml"; \
 		timestamp=$$(date -u +%Y-%m-%dT%H:%M:%SZ); \
