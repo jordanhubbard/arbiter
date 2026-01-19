@@ -195,8 +195,46 @@ func (a *Arbiter) Initialize(ctx context.Context) error {
 		}
 		projectValues = append(projectValues, *p)
 	}
+	if len(projectValues) == 0 && len(a.config.Projects) > 0 {
+		for _, p := range a.config.Projects {
+			projectValues = append(projectValues, models.Project{
+				ID:          p.ID,
+				Name:        p.Name,
+				GitRepo:     p.GitRepo,
+				Branch:      p.Branch,
+				BeadsPath:   p.BeadsPath,
+				IsPerpetual: p.IsPerpetual,
+				IsSticky:    p.IsSticky,
+				Context:     p.Context,
+				Status:      models.ProjectStatusOpen,
+			})
+		}
+	}
+	if len(projectValues) == 0 {
+		projectValues = append(projectValues, models.Project{
+			ID:          "arbiter",
+			Name:        "Arbiter",
+			GitRepo:     ".",
+			Branch:      "main",
+			BeadsPath:   ".beads",
+			IsPerpetual: true,
+			IsSticky:    true,
+			Context: map[string]string{
+				"build_command": "make build",
+				"test_command":  "make test",
+				"lint_command":  "make lint",
+			},
+			Status: models.ProjectStatusOpen,
+		})
+	}
 	if err := a.projectManager.LoadProjects(projectValues); err != nil {
 		return fmt.Errorf("failed to load projects: %w", err)
+	}
+	if a.database != nil {
+		for i := range projectValues {
+			p := projectValues[i]
+			_ = a.database.UpsertProject(&p)
+		}
 	}
 
 	// Load beads from registered projects.
@@ -261,6 +299,10 @@ func (a *Arbiter) Initialize(ctx context.Context) error {
 			_, _ = a.agentManager.RestoreAgentWorker(ctx, ag)
 			_ = a.projectManager.AddAgentToProject(ag.ProjectID, ag.ID)
 		}
+	}
+
+	if err := a.ensureBootstrapProvider(); err != nil {
+		return err
 	}
 
 	// Ensure default agents are assigned for each project.
@@ -376,9 +418,6 @@ func (a *Arbiter) ensureDefaultAgents(ctx context.Context, projectID string) err
 	if err != nil {
 		return err
 	}
-	if len(project.Agents) > 0 {
-		return nil
-	}
 
 	providers := a.providerRegistry.List()
 	if len(providers) == 0 {
@@ -390,12 +429,26 @@ func (a *Arbiter) ensureDefaultAgents(ctx context.Context, projectID string) err
 		return err
 	}
 
+	existing := map[string]struct{}{}
+	for _, agent := range a.agentManager.ListAgentsByProject(project.ID) {
+		role := agent.Role
+		if role == "" {
+			role = roleFromPersonaName(agent.PersonaName)
+		}
+		if role != "" {
+			existing[role] = struct{}{}
+		}
+	}
+
 	for _, personaName := range personaNames {
 		if !strings.HasPrefix(personaName, "default/") {
 			continue
 		}
 		roleName := strings.TrimPrefix(personaName, "default/")
 		if roleName == "" {
+			continue
+		}
+		if _, ok := existing[roleName]; ok {
 			continue
 		}
 		_, err := a.SpawnAgent(ctx, roleName, personaName, projectID, providers[0].Config.ID)
@@ -405,6 +458,60 @@ func (a *Arbiter) ensureDefaultAgents(ctx context.Context, projectID string) err
 	}
 
 	return nil
+}
+
+func (a *Arbiter) ensureBootstrapProvider() error {
+	if len(a.providerRegistry.List()) > 0 {
+		return nil
+	}
+	model := ""
+	if a.modelCatalog != nil {
+		if list := a.modelCatalog.List(); len(list) > 0 {
+			model = list[0].Name
+		}
+	}
+	config := &provider.ProviderConfig{
+		ID:       "bootstrap-local",
+		Name:     "Bootstrap Local",
+		Type:     "local",
+		Endpoint: "http://localhost:8000/v1",
+		Model:    model,
+	}
+	if err := a.providerRegistry.Upsert(config); err != nil {
+		return fmt.Errorf("failed to register bootstrap provider: %w", err)
+	}
+	if a.database != nil {
+		_ = a.database.UpsertProvider(&internalmodels.Provider{
+			ID:              config.ID,
+			Name:            config.Name,
+			Type:            config.Type,
+			Endpoint:        config.Endpoint,
+			Model:           config.Model,
+			ConfiguredModel: config.ConfiguredModel,
+			SelectedModel:   config.SelectedModel,
+			Description:     "Auto-registered provider to populate default agents.",
+			Status:          "active",
+		})
+	}
+	return nil
+}
+
+func roleFromPersonaName(personaName string) string {
+	personaName = strings.TrimSpace(personaName)
+	if strings.HasPrefix(personaName, "default/") {
+		return strings.TrimPrefix(personaName, "default/")
+	}
+	if strings.HasPrefix(personaName, "projects/") {
+		parts := strings.Split(personaName, "/")
+		if len(parts) >= 3 {
+			return parts[2]
+		}
+	}
+	if strings.Contains(personaName, "/") {
+		parts := strings.Split(personaName, "/")
+		return parts[len(parts)-1]
+	}
+	return personaName
 }
 
 // CloneAgentPersona clones a default persona into a project-specific persona and spawns a new agent.
