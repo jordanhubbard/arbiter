@@ -77,33 +77,48 @@ arbiter/
 git checkout -b feature/your-feature-name
 ```
 
-2. **Make your changes**
+2. **File a bead for your work**
+
+See [BEADS_WORKFLOW.md](BEADS_WORKFLOW.md) for detailed instructions.
+
+```bash
+# Quick example - create a bead file in .beads/beads/
+# bd-XXX-your-feature.yaml
+```
+
+All work should have a corresponding bead to enable proper tracking and coordination.
+
+3. **Make your changes**
 
 Follow the coding standards (see below)
 
-3. **Format your code**
+4. **Format your code**
 
 ```bash
 make fmt
 make vet
 ```
 
-4. **Test your changes**
+5. **Test your changes**
 
 ```bash
 make test
 ```
 
-5. **Commit your changes**
+6. **Update your bead**
+
+Mark the bead as complete and move it to `.beads/closed/` when done.
+
+7. **Commit your changes**
 
 ```bash
 git add .
 git commit -m "Brief description of changes"
 ```
 
-Use clear, descriptive commit messages.
+Use clear, descriptive commit messages. Reference the bead ID if applicable.
 
-6. **Push and create a pull request**
+8. **Push and create a pull request**
 
 ```bash
 git push origin feature/your-feature-name

@@ -1,21 +1,34 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/jordanhubbard/arbiter/pkg/secrets"
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the main configuration for the arbiter system
+// Config represents the main configuration for the arbiter system.
+// It supports both YAML-based configuration (for file-based config using LoadConfigFromFile)
+// and JSON-based configuration (for user-specific config using LoadConfig).
 type Config struct {
-	Server      ServerConfig      `yaml:"server"`
-	Database    DatabaseConfig    `yaml:"database"`
-	Beads       BeadsConfig       `yaml:"beads"`
-	Agents      AgentsConfig      `yaml:"agents"`
-	Security    SecurityConfig    `yaml:"security"`
-	Projects    []ProjectConfig   `yaml:"projects"`
-	WebUI       WebUIConfig       `yaml:"web_ui"`
+	// YAML/File-based configuration fields
+	Server      ServerConfig      `yaml:"server" json:"server,omitempty"`
+	Database    DatabaseConfig    `yaml:"database" json:"database,omitempty"`
+	Beads       BeadsConfig       `yaml:"beads" json:"beads,omitempty"`
+	Agents      AgentsConfig      `yaml:"agents" json:"agents,omitempty"`
+	Security    SecurityConfig    `yaml:"security" json:"security,omitempty"`
+	Projects    []ProjectConfig   `yaml:"projects" json:"projects,omitempty"`
+	WebUI       WebUIConfig       `yaml:"web_ui" json:"web_ui,omitempty"`
+	Temporal    TemporalConfig    `yaml:"temporal" json:"temporal,omitempty"`
+	
+	// JSON/User-specific configuration fields
+	Providers   []Provider        `yaml:"providers,omitempty" json:"providers"`
+	ServerPort  int               `yaml:"server_port,omitempty" json:"server_port"`
+	SecretStore *secrets.Store    `yaml:"-" json:"-"`
 }
 
 // ServerConfig configures the HTTP/HTTPS server
@@ -40,10 +53,10 @@ type DatabaseConfig struct {
 
 // BeadsConfig configures beads integration
 type BeadsConfig struct {
-	BDPath         string        `yaml:"bd_path"`           // Path to bd executable
+	BDPath         string        `yaml:"bd_path"`          // Path to bd executable
 	AutoSync       bool          `yaml:"auto_sync"`
 	SyncInterval   time.Duration `yaml:"sync_interval"`
-	CompactOldDays int           `yaml:"compact_old_days"`  // Days before compacting closed beads
+	CompactOldDays int           `yaml:"compact_old_days"` // Days before compacting closed beads
 }
 
 // AgentsConfig configures agent behavior
@@ -64,14 +77,25 @@ type SecurityConfig struct {
 	APIKeys        []string `yaml:"api_keys,omitempty"`
 }
 
+// TemporalConfig configures Temporal workflow engine
+type TemporalConfig struct {
+	Host                     string        `yaml:"host"`
+	Namespace                string        `yaml:"namespace"`
+	TaskQueue                string        `yaml:"task_queue"`
+	WorkflowExecutionTimeout time.Duration `yaml:"workflow_execution_timeout"`
+	WorkflowTaskTimeout      time.Duration `yaml:"workflow_task_timeout"`
+	EnableEventBus           bool          `yaml:"enable_event_bus"`
+	EventBufferSize          int           `yaml:"event_buffer_size"`
+}
+
 // ProjectConfig represents a project configuration
 type ProjectConfig struct {
-	ID          string            `yaml:"id"`
-	Name        string            `yaml:"name"`
-	GitRepo     string            `yaml:"git_repo"`
-	Branch      string            `yaml:"branch"`
-	BeadsPath   string            `yaml:"beads_path"`
-	Context     map[string]string `yaml:"context"`
+	ID        string            `yaml:"id"`
+	Name      string            `yaml:"name"`
+	GitRepo   string            `yaml:"git_repo"`
+	Branch    string            `yaml:"branch"`
+	BeadsPath string            `yaml:"beads_path"`
+	Context   map[string]string `yaml:"context"`
 }
 
 // WebUIConfig configures the web interface
@@ -81,8 +105,9 @@ type WebUIConfig struct {
 	RefreshInterval int    `yaml:"refresh_interval"` // seconds
 }
 
-// LoadConfig loads configuration from a YAML file
-func LoadConfig(path string) (*Config, error) {
+// LoadConfigFromFile loads configuration from a YAML file at the specified path.
+// This is typically used for loading system-wide or project-specific configuration.
+func LoadConfigFromFile(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -94,6 +119,34 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// LoadConfig loads user-specific configuration from the default JSON config file.
+// This is typically used for loading user preferences and provider settings.
+// The config file is stored at ~/.arbiter.json
+func LoadConfig() (*Config, error) {
+	configPath, err := getConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	// Initialize secret store
+	cfg.SecretStore = secrets.NewStore()
+	if err := cfg.SecretStore.Load(); err != nil {
+		return nil, fmt.Errorf("failed to load secrets: %w", err)
+	}
+
+	return &cfg, nil
 }
 
 // DefaultConfig returns a default configuration
@@ -129,6 +182,15 @@ func DefaultConfig() *Config {
 			PKIEnabled:     false,
 			RequireHTTPS:   false,
 			AllowedOrigins: []string{"*"},
+		},
+		Temporal: TemporalConfig{
+			Host:                     "localhost:7233",
+			Namespace:                "arbiter-default",
+			TaskQueue:                "arbiter-tasks",
+			WorkflowExecutionTimeout: 24 * time.Hour,
+			WorkflowTaskTimeout:      10 * time.Second,
+			EnableEventBus:           true,
+			EventBufferSize:          1000,
 		},
 		WebUI: WebUIConfig{
 			Enabled:         true,

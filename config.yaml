@@ -34,17 +34,20 @@ security:
   require_https: false
   allowed_origins:
     - "*"  # CORS - adjust in production
+  # api_keys:
+  #   - "your-api-key-here"
 
 # Projects - Arbiter is registered with itself as the first project
 projects:
   - id: arbiter
     name: Arbiter
     git_repo: /home/runner/work/arbiter/arbiter
-    branch: copilot/register-arbiter-project
+    branch: main  # Now merged to main
     beads_path: .beads
     context:
-      build_command: "go build -o arbiter ./cmd/arbiter || go build"
-      test_command: "go test ./..."
+      build_command: "make build"
+      test_command: "make test"
+      lint_command: "make lint"
       description: "An agentic based coding orchestrator for both on-prem and off-prem development"
       language: "Go"
       primary_maintainer: "jordanhubbard"

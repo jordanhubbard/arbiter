@@ -3,64 +3,91 @@ package beads
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/jordanhubbard/arbiter/pkg/models"
+	"gopkg.in/yaml.v3"
 )
 
 // Manager integrates with the bd (beads) CLI tool
 type Manager struct {
-	bdPath   string
-	mu       sync.RWMutex
-	beads    map[string]*models.Bead
+	bdPath    string
+	beadsPath string
+	mu        sync.RWMutex
+	beads     map[string]*models.Bead
 	workGraph *models.WorkGraph
+	nextID    int // For generating IDs when bd CLI is not available
 }
 
 // NewManager creates a new beads manager
 func NewManager(bdPath string) *Manager {
 	return &Manager{
-		bdPath:   bdPath,
-		beads:    make(map[string]*models.Bead),
+		bdPath:    bdPath,
+		beadsPath: ".beads",
+		beads:     make(map[string]*models.Bead),
 		workGraph: &models.WorkGraph{
-			Beads: make(map[string]*models.Bead),
-			Edges: []models.Edge{},
+			Beads:     make(map[string]*models.Bead),
+			Edges:     []models.Edge{},
 			UpdatedAt: time.Now(),
 		},
+		nextID: 1,
 	}
 }
 
-// CreateBead creates a new bead using bd CLI
+// SetBeadsPath sets the path to the beads directory
+func (m *Manager) SetBeadsPath(path string) {
+	m.beadsPath = path
+}
+
+// CreateBead creates a new bead using bd CLI or filesystem fallback
 func (m *Manager) CreateBead(title, description string, priority models.BeadPriority, beadType, projectID string) (*models.Bead, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Build bd command
-	args := []string{"create", title, "-p", fmt.Sprintf("%d", priority)}
-	
-	if description != "" {
-		args = append(args, "-d", description)
+	var beadID string
+	var bead *models.Bead
+
+	// Try bd CLI first if available
+	if m.bdPath != "" {
+		args := []string{"create", title, "-p", fmt.Sprintf("%d", priority)}
+		
+		if description != "" {
+			args = append(args, "-d", description)
+		}
+
+		cmd := exec.Command(m.bdPath, args...)
+		output, err := cmd.CombinedOutput()
+		
+		if err == nil {
+			// Parse output to get bead ID
+			outputStr := string(output)
+			beadID = m.extractBeadID(outputStr)
+		}
 	}
 
-	// Execute bd command
-	cmd := exec.Command(m.bdPath, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bead: %w, output: %s", err, string(output))
-	}
-
-	// Parse output to get bead ID
-	// bd typically outputs: Created bd-xxxxx
-	outputStr := string(output)
-	beadID := m.extractBeadID(outputStr)
+	// Fallback to filesystem-based bead creation
 	if beadID == "" {
-		return nil, fmt.Errorf("failed to extract bead ID from output: %s", outputStr)
+		// Generate a new ID
+		beadID = fmt.Sprintf("bd-%03d", m.nextID)
+		m.nextID++
+		
+		// Check for existing beads to avoid ID collision
+		for {
+			if _, exists := m.beads[beadID]; !exists {
+				break
+			}
+			beadID = fmt.Sprintf("bd-%03d", m.nextID)
+			m.nextID++
+		}
 	}
 
 	// Create internal bead representation
-	bead := &models.Bead{
+	bead = &models.Bead{
 		ID:          beadID,
 		Type:        beadType,
 		Title:       title,
@@ -75,6 +102,12 @@ func (m *Manager) CreateBead(title, description string, priority models.BeadPrio
 	m.beads[beadID] = bead
 	m.workGraph.Beads[beadID] = bead
 	m.workGraph.UpdatedAt = time.Now()
+
+	// Save to filesystem
+	if err := m.SaveBeadToFilesystem(bead, m.beadsPath); err != nil {
+		// Log error but don't fail - the bead is in memory
+		fmt.Fprintf(os.Stderr, "Warning: failed to save bead to filesystem: %v\n", err)
+	}
 
 	return bead, nil
 }
@@ -125,6 +158,11 @@ func (m *Manager) UpdateBead(id string, updates map[string]interface{}) error {
 	// Apply updates
 	if status, ok := updates["status"].(models.BeadStatus); ok {
 		bead.Status = status
+		// Set closed_at timestamp if closing
+		if status == models.BeadStatusClosed && bead.ClosedAt == nil {
+			now := time.Now()
+			bead.ClosedAt = &now
+		}
 	}
 	if assignedTo, ok := updates["assigned_to"].(string); ok {
 		bead.AssignedTo = assignedTo
@@ -136,7 +174,10 @@ func (m *Manager) UpdateBead(id string, updates map[string]interface{}) error {
 	bead.UpdatedAt = time.Now()
 	m.workGraph.UpdatedAt = time.Now()
 
-	// TODO: Sync with bd CLI
+	// Save to filesystem
+	if err := m.SaveBeadToFilesystem(bead, m.beadsPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to save bead to filesystem: %v\n", err)
+	}
 
 	return nil
 }
@@ -351,4 +392,102 @@ func (m *Manager) matchesFilters(bead *models.Bead, filters map[string]interface
 	}
 	
 	return true
+}
+
+// LoadBeadsFromFilesystem loads beads from .beads directory when bd CLI is not available
+func (m *Manager) LoadBeadsFromFilesystem(beadsPath string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	beadsDir := filepath.Join(beadsPath, "beads")
+	
+	// Check if directory exists
+	if _, err := os.Stat(beadsDir); os.IsNotExist(err) {
+		return nil // No beads directory, skip silently
+	}
+
+	// Read all YAML files in beads directory
+	entries, err := os.ReadDir(beadsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read beads directory: %w", err)
+	}
+
+	loadedCount := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		beadPath := filepath.Join(beadsDir, entry.Name())
+		data, err := os.ReadFile(beadPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to read bead file %s: %v\n", entry.Name(), err)
+			continue // Skip files we can't read
+		}
+
+		var bead models.Bead
+		if err := yaml.Unmarshal(data, &bead); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to parse bead file %s: %v\n", entry.Name(), err)
+			continue // Skip invalid YAML
+		}
+
+		// Add to internal cache
+		m.beads[bead.ID] = &bead
+		m.workGraph.Beads[bead.ID] = &bead
+		loadedCount++
+	}
+
+	if loadedCount > 0 {
+		fmt.Fprintf(os.Stderr, "Loaded %d bead(s) from %s\n", loadedCount, beadsDir)
+	}
+
+	m.workGraph.UpdatedAt = time.Now()
+	return nil
+}
+
+// SaveBeadToFilesystem saves a bead to the filesystem
+func (m *Manager) SaveBeadToFilesystem(bead *models.Bead, beadsPath string) error {
+	beadsDir := filepath.Join(beadsPath, "beads")
+	
+	// Ensure directory exists
+	if err := os.MkdirAll(beadsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create beads directory: %w", err)
+	}
+
+	// Generate filename from bead ID and title
+	filename := fmt.Sprintf("%s-%s.yaml", bead.ID, sanitizeFilename(bead.Title))
+	beadPath := filepath.Join(beadsDir, filename)
+
+	// Marshal to YAML
+	data, err := yaml.Marshal(bead)
+	if err != nil {
+		return fmt.Errorf("failed to marshal bead: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(beadPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write bead file: %w", err)
+	}
+
+	return nil
+}
+
+// sanitizeFilename removes characters that aren't safe for filenames
+func sanitizeFilename(s string) string {
+	// Convert to lowercase
+	s = strings.ToLower(s)
+	// Replace spaces with hyphens
+	s = strings.ReplaceAll(s, " ", "-")
+	// Keep only alphanumeric and hyphens
+	var result strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			result.WriteRune(r)
+		}
+	}
+	// Limit length
+	if result.Len() > 50 {
+		return result.String()[:50]
+	}
+	return result.String()
 }
