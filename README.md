@@ -33,6 +33,10 @@ Default personas are available under `./personas/`:
 - `personas/default/public-relations-manager` — Messaging/launch communication support
 - `personas/default/housekeeping-bot` — Cleanup and hygiene tasks
 
+## User Guide
+
+The initial user guide is available in `docs/USER_GUIDE.md`.
+
 ## Project Registration
 
 Projects are registered via `config.yaml` under `projects:` (and persisted in the configuration DB when enabled).

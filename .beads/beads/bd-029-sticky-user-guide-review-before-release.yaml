@@ -1,0 +1,46 @@
+id: bd-029
+type: task
+title: P1 (sticky) User guide review by personas before release approval
+description: |
+  This is a sticky, always-on bead for the Arbiter project.
+
+  Goal
+  - Ensure the Arbiter user guide is reviewed and augmented by relevant personas
+    before any release can be approved by release engineers.
+
+  Rules
+  1) Release gating
+     - A release cannot be approved unless the user guide has been reviewed and
+       updated as needed.
+  2) Required reviewers
+     - At minimum: documentation-manager, project-manager, and qa-engineer.
+     - Additional personas should be included when their domain is impacted
+       (e.g., devops-engineer for deployment changes).
+  3) Evidence
+     - Each release must include a short note in the release checklist or bead
+       context confirming the review occurred and describing any updates made.
+
+  Definition of Done (for any release bead)
+  - The user guide has been reviewed by the required personas.
+  - The guide is updated to reflect any changes in workflows or features.
+  - Release approval includes the review evidence.
+
+status: open
+priority: 1
+project_id: arbiter
+assigned_to: null
+blocked_by: []
+blocks: []
+parent: null
+children: []
+tags:
+  - p1
+  - sticky
+  - docs
+  - release
+  - process
+created_at: 2026-01-19T14:05:00Z
+updated_at: 2026-01-19T14:05:00Z
+closed_at: null
+context:
+  source: user-request
