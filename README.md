@@ -4,6 +4,17 @@ An agentic-based coding orchestrator for both on-prem and off-prem development.
 
 AgentiCorp is a lightweight AI coding agent orchestration system that manages workflows, handles agent lifecycle, and provides real-time event streaming for monitoring and coordination.
 
+## Documentation
+
+**Start here**: [MANUAL.md](MANUAL.md) - Complete system manual with quick start guide
+
+Then explore:
+- [User Guide](docs/USER_GUIDE.md) - Getting started and operational workflows
+- [Architecture](docs/ARCHITECTURE.md) - System design and components
+- [Entities Reference](docs/ENTITIES_REFERENCE.md) - All data structures explained
+- [Temporal DSL Guide](docs/TEMPORAL_DSL.md) - Workflow language for agents
+- [Developer Guide](AGENTS.md) - For contributors and custom agents
+
 ## Features
 
 - 🤖 **Agent Orchestration**: Spawn and manage AI agents with different personas
@@ -284,20 +295,37 @@ agents:
   heartbeat_interval: 30s
   file_lock_timeout: 10m
 
+## Completed Features
+
 - [x] Project state management (open, closed, reopened)
 - [x] Project comments and closure workflow
 - [x] AgentiCorp persona for self-improvement
 - [x] Perpetual projects that never close
-- [ ] Implement actual HTTP forwarding to providers
-- [ ] Add streaming support for real-time responses
-- [ ] Implement request/response logging and analytics
-- [ ] Add support for provider-specific features
-- [ ] Implement load balancing and failover
-- [ ] Add authentication for AgentiCorp API
-- [ ] Support for custom provider plugins
-- [ ] Add metrics and monitoring endpoints
-- [ ] Implement rate limiting per provider
-- [ ] Add caching layer for responses
+- [x] Provider registration and health checking
+- [x] Agent orchestration with personas
+- [x] Work item (bead) management with dependencies
+- [x] Decision approval workflows
+- [x] Real-time event streaming (SSE)
+- [x] Temporal workflow orchestration
+- [x] Database state persistence (SQLite)
+- [x] Web UI for monitoring and control
+- [x] Provider status detection and activation
+- [x] Master heartbeat and dispatcher workflows
+- [x] Temporal DSL for agent workflow requests
+- [x] Complete documentation and user manual
+
+## Planned Features
+
+- [ ] Implement HTTP response streaming for real-time provider output
+- [ ] Add analytics and request/response logging
+- [ ] Implement provider pooling and load balancing
+- [ ] Add per-provider rate limiting and quotas
+- [ ] Support custom provider plugins
+- [ ] Add caching layer for frequently used models
+- [ ] Implement multi-region provider failover
+- [ ] Add authentication and authorization for AgentiCorp API
+- [ ] Support for custom authentication to providers
+- [ ] Metrics and monitoring endpoints (Prometheus compatible)
 
 ## Project State Management
 
