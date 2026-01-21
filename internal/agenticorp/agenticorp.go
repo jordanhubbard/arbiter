@@ -86,6 +86,12 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize database: %w", err)
 		}
+	} else if cfg.Database.Type == "postgres" && cfg.Database.DSN != "" {
+		var err error
+		db, err = database.NewPostgres(cfg.Database.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize postgres: %w", err)
+		}
 	}
 
 	modelCatalog := modelcatalog.DefaultCatalog()

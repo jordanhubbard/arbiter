@@ -13,7 +13,9 @@ import (
 
 // Database represents the agenticorp database
 type Database struct {
-	db *sql.DB
+	db         *sql.DB
+	dbType     string // "sqlite" or "postgres"
+	supportsHA bool   // true if database supports HA features
 }
 
 // New creates a new database instance and initializes the schema
@@ -29,7 +31,11 @@ func New(dbPath string) (*Database, error) {
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
-	d := &Database{db: db}
+	d := &Database{
+		db:         db,
+		dbType:     "sqlite",
+		supportsHA: false,
+	}
 
 	// Initialize schema
 	if err := d.initSchema(); err != nil {
@@ -59,6 +65,16 @@ func (d *Database) Close() error {
 // DB returns the underlying sql.DB instance
 func (d *Database) DB() *sql.DB {
 	return d.db
+}
+
+// Type returns the database type
+func (d *Database) Type() string {
+	return d.dbType
+}
+
+// SupportsHA returns whether the database supports HA features
+func (d *Database) SupportsHA() bool {
+	return d.supportsHA
 }
 
 // initSchema creates the database tables

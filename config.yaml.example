@@ -12,8 +12,12 @@ server:
   idle_timeout: 120s
 
 database:
-  type: sqlite
+  type: sqlite  # "sqlite" for single instance, "postgres" for distributed deployment
   path: ./agenticorp.db
+  
+  # For distributed deployment (High Availability):
+  # type: postgres
+  # dsn: "postgresql://user:password@localhost:5432/agenticorp?sslmode=require"
 
 beads:
   bd_path: bd  # Path to bd executable
