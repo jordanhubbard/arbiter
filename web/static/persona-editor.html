@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persona Editor - AgentiCorp</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/persona-editor.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/">AgentiCorp</a>
+        </div>
+        <div class="nav-menu">
+            <a href="/">Dashboard</a>
+            <a href="/projects">Projects</a>
+            <a href="/agents">Agents</a>
+            <a href="/persona-editor.html" class="active">Persona Editor</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="editor-layout">
+            <!-- Sidebar - Persona List -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Personas</h2>
+                    <button id="new-persona-btn" class="btn btn-primary btn-sm">New</button>
+                </div>
+                <div id="persona-list" class="persona-list">
+                    <!-- Dynamically populated -->
+                </div>
+            </aside>
+
+            <!-- Main Editor -->
+            <main class="editor-main">
+                <div class="editor-header">
+                    <h1>Persona Editor</h1>
+                    <div class="editor-actions">
+                        <button id="save-persona-btn" class="btn btn-primary">Save</button>
+                        <button id="delete-persona-btn" class="btn btn-danger">Delete</button>
+                    </div>
+                </div>
+
+                <div class="editor-content">
+                    <div class="editor-form">
+                        <h2>Details</h2>
+
+                        <div class="form-group">
+                            <label for="persona-id">ID *</label>
+                            <input type="text" id="persona-id" class="form-control" 
+                                   placeholder="e.g., backend-developer" pattern="[a-z0-9-]+">
+                            <small>Lowercase letters, numbers, and hyphens only</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="persona-name">Name *</label>
+                            <input type="text" id="persona-name" class="form-control" 
+                                   placeholder="e.g., Backend Developer">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="persona-role">Role *</label>
+                            <input type="text" id="persona-role" class="form-control" 
+                                   placeholder="e.g., Senior Backend Engineer">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="persona-instructions">Instructions *</label>
+                            <textarea id="persona-instructions" class="form-control" rows="10"
+                                      placeholder="Describe how this persona thinks and acts..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="persona-capabilities">Capabilities * (one per line)</label>
+                            <textarea id="persona-capabilities" class="form-control" rows="8"
+                                      placeholder="Design APIs&#10;Write backend code&#10;Optimize database queries"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="editor-preview">
+                        <h2>Preview</h2>
+                        <div id="persona-preview" class="preview-content">
+                            <p class="text-muted">Select or create a persona to see preview</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="/static/js/persona-editor.js"></script>
+</body>
+</html>
