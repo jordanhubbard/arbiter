@@ -11,6 +11,7 @@ import (
 	"github.com/jordanhubbard/agenticorp/internal/agenticorp"
 	"github.com/jordanhubbard/agenticorp/internal/analytics"
 	"github.com/jordanhubbard/agenticorp/internal/auth"
+	"github.com/jordanhubbard/agenticorp/internal/cache"
 	"github.com/jordanhubbard/agenticorp/internal/keymanager"
 	"github.com/jordanhubbard/agenticorp/pkg/config"
 	"github.com/jordanhubbard/agenticorp/pkg/models"
@@ -22,6 +23,7 @@ type Server struct {
 	keyManager      *keymanager.KeyManager
 	authManager     *auth.Manager
 	analyticsLogger *analytics.Logger
+	cache           *cache.Cache
 	config          *config.Config
 	apiFailureMu    sync.Mutex
 	apiFailureLast  map[string]time.Time
@@ -38,11 +40,35 @@ func NewServer(arb *agenticorp.AgentiCorp, km *keymanager.KeyManager, am *auth.M
 		}
 	}
 
+	// Initialize cache with config
+	var responseCache *cache.Cache
+	if cfg != nil && cfg.Cache.Enabled {
+		cacheConfig := &cache.Config{
+			Enabled:       cfg.Cache.Enabled,
+			DefaultTTL:    cfg.Cache.DefaultTTL,
+			MaxSize:       cfg.Cache.MaxSize,
+			MaxMemoryMB:   cfg.Cache.MaxMemoryMB,
+			CleanupPeriod: cfg.Cache.CleanupPeriod,
+		}
+		// Use defaults if not specified
+		if cacheConfig.DefaultTTL == 0 {
+			cacheConfig.DefaultTTL = 1 * time.Hour
+		}
+		if cacheConfig.MaxSize == 0 {
+			cacheConfig.MaxSize = 10000
+		}
+		if cacheConfig.CleanupPeriod == 0 {
+			cacheConfig.CleanupPeriod = 5 * time.Minute
+		}
+		responseCache = cache.New(cacheConfig)
+	}
+
 	return &Server{
 		agenticorp:      arb,
 		keyManager:      km,
 		authManager:     am,
 		analyticsLogger: analyticsLogger,
+		cache:           responseCache,
 		config:          cfg,
 		apiFailureLast:  make(map[string]time.Time),
 	}
@@ -157,6 +183,11 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("/api/v1/analytics/export", s.handleExportLogs)
 	mux.HandleFunc("/api/v1/analytics/export-stats", s.handleExportStats)
 	mux.HandleFunc("/api/v1/analytics/costs", s.handleGetCostReport)
+
+	// Cache management
+	mux.HandleFunc("/api/v1/cache/stats", s.handleGetCacheStats)
+	mux.HandleFunc("/api/v1/cache/config", s.handleGetCacheConfig)
+	mux.HandleFunc("/api/v1/cache/clear", s.handleClearCache)
 
 	// Configuration
 	mux.HandleFunc("/api/v1/config", s.handleConfig)

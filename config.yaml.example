@@ -46,6 +46,13 @@ temporal:
   enable_event_bus: true
   event_buffer_size: 1000
 
+cache:
+  enabled: true               # Enable response caching
+  default_ttl: 1h             # Default time-to-live for cache entries
+  max_size: 10000             # Maximum number of cached entries
+  max_memory_mb: 500          # Maximum memory usage (approximate)
+  cleanup_period: 5m          # How often to clean expired entries
+
 projects:
   - id: agenticorp-self
     name: AgentiCorp Self-Improvement

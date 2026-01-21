@@ -29,6 +29,7 @@ type Config struct {
 	Beads    BeadsConfig     `yaml:"beads" json:"beads,omitempty"`
 	Agents   AgentsConfig    `yaml:"agents" json:"agents,omitempty"`
 	Security SecurityConfig  `yaml:"security" json:"security,omitempty"`
+	Cache    CacheConfig     `yaml:"cache" json:"cache,omitempty"`
 	Projects []ProjectConfig `yaml:"projects" json:"projects,omitempty"`
 	WebUI    WebUIConfig     `yaml:"web_ui" json:"web_ui,omitempty"`
 	Temporal TemporalConfig  `yaml:"temporal" json:"temporal,omitempty"`
@@ -95,6 +96,15 @@ type TemporalConfig struct {
 	WorkflowTaskTimeout      time.Duration `yaml:"workflow_task_timeout"`
 	EnableEventBus           bool          `yaml:"enable_event_bus"`
 	EventBufferSize          int           `yaml:"event_buffer_size"`
+}
+
+// CacheConfig configures response caching
+type CacheConfig struct {
+	Enabled       bool          `yaml:"enabled" json:"enabled"`
+	DefaultTTL    time.Duration `yaml:"default_ttl" json:"default_ttl"`
+	MaxSize       int           `yaml:"max_size" json:"max_size"`
+	MaxMemoryMB   int           `yaml:"max_memory_mb" json:"max_memory_mb"`
+	CleanupPeriod time.Duration `yaml:"cleanup_period" json:"cleanup_period"`
 }
 
 // ProjectConfig represents a project configuration

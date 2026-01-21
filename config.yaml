@@ -22,7 +22,7 @@ beads:
   compact_old_days: 90  # Compact closed beads older than 90 days
 
 agents:
-  max_concurrent: 20
+  max_concurrent: 10
   default_persona_path: ./personas
   heartbeat_interval: 30s
   file_lock_timeout: 10m
@@ -37,27 +37,42 @@ security:
   # api_keys:
   #   - "your-api-key-here"
 
-projects:
-  - id: agenticorp
-    name: AgentiCorp
-    git_repo: .
-    branch: main
-    beads_path: .beads
-    is_perpetual: true
-    is_sticky: true
-    context:
-      build_command: "make build"
-      test_command: "make test"
-      lint_command: "make lint"
-
 temporal:
-  host: temporal:7233
+  host: localhost:7233
   namespace: agenticorp-default
   task_queue: agenticorp-tasks
   workflow_execution_timeout: 24h
   workflow_task_timeout: 10s
   enable_event_bus: true
   event_buffer_size: 1000
+
+cache:
+  enabled: true               # Enable response caching
+  default_ttl: 1h             # Default time-to-live for cache entries
+  max_size: 10000             # Maximum number of cached entries
+  max_memory_mb: 500          # Maximum memory usage (approximate)
+  cleanup_period: 5m          # How often to clean expired entries
+
+projects:
+  - id: agenticorp-self
+    name: AgentiCorp Self-Improvement
+    git_repo: https://github.com/jordanhubbard/AgentiCorp
+    branch: main
+    beads_path: .beads
+    is_perpetual: true
+    is_sticky: true
+    context:
+      build_command: "go build"
+      test_command: "go test ./..."
+      description: "The AgentiCorp project itself - perpetual self-improvement"
+  - id: example-project
+    name: Example Project
+    git_repo: /path/to/repo
+    branch: main
+    beads_path: .beads
+    context:
+      build_command: "make build"
+      test_command: "make test"
 
 web_ui:
   enabled: true
