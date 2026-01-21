@@ -1,0 +1,44 @@
+type: http
+endpoint: http://localhost:8090
+
+metadata:
+  name: Example Python Plugin
+  version: 1.0.0
+  plugin_api_version: "1.0.0"
+  provider_type: example-python
+  description: Example plugin demonstrating Python implementation with Flask
+  author: AgentiCorp Team
+  homepage: https://github.com/jordanhubbard/AgentiCorp
+  license: MIT
+  
+  capabilities:
+    streaming: false
+    function_calling: true
+    vision: false
+    embeddings: false
+    fine_tuning: false
+  
+  config_schema:
+    - name: api_key
+      type: string
+      required: true
+      description: OpenAI API key (or compatible)
+      sensitive: true
+      
+    - name: endpoint
+      type: string
+      required: false
+      description: API endpoint URL
+      default: "https://api.openai.com/v1"
+      
+    - name: timeout
+      type: int
+      required: false
+      description: Request timeout in seconds
+      default: 30
+      validation:
+        min: 1
+        max: 300
+
+auto_start: false  # Set to true to auto-start
+health_check_interval: 60
