@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "plugins": [
+    {
+      "id": "example-python",
+      "name": "Example Python Plugin",
+      "provider_type": "example-python",
+      "description": "Example plugin demonstrating Python implementation with Flask",
+      "author": "AgentiCorp Team",
+      "version": "1.0.0",
+      "license": "MIT",
+      "homepage": "https://github.com/jordanhubbard/AgentiCorp",
+      "repository": "https://github.com/jordanhubbard/AgentiCorp",
+      "downloads": 0,
+      "rating": 0.0,
+      "reviews": 0,
+      "verified": true,
+      "tags": ["example", "python", "flask", "openai"],
+      "capabilities": {
+        "streaming": false,
+        "function_calling": true,
+        "vision": false
+      },
+      "install": {
+        "type": "http",
+        "manifest_url": "file://./examples/plugins/example-python/plugin.yaml"
+      },
+      "published_at": "2026-01-21T00:00:00Z",
+      "updated_at": "2026-01-21T00:00:00Z"
+    }
+  ]
+}
