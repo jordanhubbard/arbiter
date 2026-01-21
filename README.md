@@ -13,6 +13,7 @@ Then explore:
 - [Architecture](docs/ARCHITECTURE.md) - System design and components
 - [Entities Reference](docs/ENTITIES_REFERENCE.md) - All data structures explained
 - [Temporal DSL Guide](docs/TEMPORAL_DSL.md) - Workflow language for agents
+- [Analytics Guide](docs/ANALYTICS_GUIDE.md) - Usage monitoring and cost tracking
 - [API Authentication](docs/AUTH.md) - JWT, API keys, and RBAC
 - [Developer Guide](AGENTS.md) - For contributors and custom agents
 
@@ -26,6 +27,7 @@ Then explore:
 - 📡 **Real-time Events**: Server-Sent Events (SSE) for live status updates
 - 🎯 **Smart Routing**: Intelligent task assignment and agent coordination
 - 🔒 **Secure**: Encrypted secret storage and secure credential management
+- 📈 **Analytics & Cost Tracking**: Real-time usage monitoring, cost tracking, and spending alerts
 
 ## Default Personas
 
@@ -233,9 +235,16 @@ GET    /api/v1/projects/{id}
 
 # Work Graph
 GET    /api/v1/work-graph?project_id={id}
+
+# Analytics & Cost Tracking
+GET    /api/v1/analytics/logs
+GET    /api/v1/analytics/stats
+GET    /api/v1/analytics/costs
+GET    /api/v1/analytics/export
+GET    /api/v1/analytics/export-stats
 ```
 
-### Event Streaming (NEW)
+### Event Streaming
 
 Real-time event streaming via Server-Sent Events:
 
@@ -315,19 +324,24 @@ agents:
 - [x] Master heartbeat and dispatcher workflows
 - [x] Temporal DSL for agent workflow requests
 - [x] Complete documentation and user manual
+- [x] Analytics dashboard with real-time usage monitoring
+- [x] Per-user and per-provider cost tracking
+- [x] Data export (CSV/JSON) for external analysis
+- [x] Spending alerts with anomaly detection
+- [x] Privacy-first logging with GDPR compliance
 
 ## Planned Features
 
 - [ ] Implement HTTP response streaming for real-time provider output
-- [ ] Add analytics and request/response logging
 - [ ] Implement provider pooling and load balancing
 - [ ] Add per-provider rate limiting and quotas
 - [ ] Support custom provider plugins
 - [ ] Add caching layer for frequently used models
 - [ ] Implement multi-region provider failover
-- [ ] Add authentication and authorization for AgentiCorp API
 - [ ] Support for custom authentication to providers
 - [ ] Metrics and monitoring endpoints (Prometheus compatible)
+- [ ] Email/webhook notifications for alerts
+- [ ] Advanced charting and trend analysis
 
 ## Project State Management
 
