@@ -221,6 +221,7 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 		RequestsByUser:   make(map[string]int64),
 		RequestsByProvider: make(map[string]int64),
 		CostByProvider:   make(map[string]float64),
+		CostByUser:       make(map[string]float64),
 	}
 
 	var errorCount int64
@@ -240,12 +241,11 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 		stats.ErrorRate = float64(errorCount) / float64(stats.TotalRequests)
 	}
 
-	// Get per-user stats
-	userQuery := baseQuery + " GROUP BY user_id"
-	userQuery = fmt.Sprintf(`
-		SELECT user_id, COUNT(*) as count
+	// Get per-user stats (requests and costs)
+	userQuery := fmt.Sprintf(`
+		SELECT user_id, COUNT(*) as count, COALESCE(SUM(cost_usd), 0) as cost
 		FROM request_logs
-		WHERE 1=1 %s
+		WHERE 1=1 %s AND user_id IS NOT NULL AND user_id != ''
 		GROUP BY user_id
 	`, buildWhereClause(filter))
 	
@@ -255,8 +255,10 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 		for rows.Next() {
 			var userID string
 			var count int64
-			if err := rows.Scan(&userID, &count); err == nil {
+			var cost float64
+			if err := rows.Scan(&userID, &count, &cost); err == nil {
 				stats.RequestsByUser[userID] = count
+				stats.CostByUser[userID] = cost
 			}
 		}
 	}

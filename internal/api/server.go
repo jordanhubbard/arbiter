@@ -139,6 +139,12 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("/api/v1/projects/git/push", s.handleGitPush)
 	mux.HandleFunc("/api/v1/projects/git/status", s.handleGitStatus)
 
+	// Analytics and cost tracking
+	mux.HandleFunc("/api/v1/analytics/logs", s.handleGetLogs)
+	mux.HandleFunc("/api/v1/analytics/stats", s.handleGetLogStats)
+	mux.HandleFunc("/api/v1/analytics/export", s.handleExportLogs)
+	mux.HandleFunc("/api/v1/analytics/costs", s.handleGetCostReport)
+
 	// Configuration
 	mux.HandleFunc("/api/v1/config", s.handleConfig)
 	mux.HandleFunc("/api/v1/config/export.yaml", s.handleConfigExportYAML)
