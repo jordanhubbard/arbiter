@@ -56,6 +56,9 @@ RUN mkdir -p /home/agenticorp/.ssh && \
 # Create source mount point
 RUN mkdir -p /app/src && chown agenticorp:agenticorp /app/src
 
+# Create data directory for SQLite database persistence
+RUN mkdir -p /app/data && chown agenticorp:agenticorp /app/data
+
 # Change ownership
 RUN chown -R agenticorp:agenticorp /app
 
