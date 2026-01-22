@@ -1,0 +1,20 @@
+# ============================================================================
+# RELEASE AUTOMATION
+# ============================================================================
+
+# Create a new release (default: patch version bump)
+# Usage:
+#   make release              # Bump patch version (x.y.Z)
+#   make release-minor        # Bump minor version (x.Y.0)
+#   make release-major        # Bump major version (X.0.0)
+release:
+	@echo "Creating patch release..."
+	@BATCH=$(BATCH) ./scripts/release.sh patch
+
+release-minor:
+	@echo "Creating minor release..."
+	@BATCH=$(BATCH) ./scripts/release.sh minor
+
+release-major:
+	@echo "Creating major release..."
+	@BATCH=$(BATCH) ./scripts/release.sh major

@@ -1,4 +1,4 @@
-.PHONY: all build build-all run restart test test-api coverage fmt vet deps clean distclean install config dev-setup docker-build docker-run docker-stop docker-clean help lint lint-yaml lint-docs
+.PHONY: all build build-all run restart test test-api coverage fmt vet deps clean distclean install config dev-setup docker-build docker-run docker-stop docker-clean help lint lint-yaml lint-docs release release-major release-minor release-patch
 
 # Build variables
 BINARY_NAME=agenticorp
@@ -207,4 +207,30 @@ help:
 	@echo "  make docker-stop  - Stop Docker containers"
 	@echo "  make docker-clean - Clean Docker resources"
 	@echo ""
+	@echo "Release:"
+	@echo "  make release        - Create patch release (x.y.Z)"
+	@echo "  make release-minor  - Create minor release (x.Y.0)"
+	@echo "  make release-major  - Create major release (X.0.0)"
+	@echo ""
 	@echo "  make help         - Show this help message"
+
+# ============================================================================
+# RELEASE AUTOMATION
+# ============================================================================
+
+# Create a new release (default: patch version bump)
+# Usage:
+#   make release              # Bump patch version (x.y.Z)
+#   make release-minor        # Bump minor version (x.Y.0)
+#   make release-major        # Bump major version (X.0.0)
+release:
+	@echo "Creating patch release..."
+	@BATCH=$(BATCH) ./scripts/release.sh patch
+
+release-minor:
+	@echo "Creating minor release..."
+	@BATCH=$(BATCH) ./scripts/release.sh minor
+
+release-major:
+	@echo "Creating major release..."
+	@BATCH=$(BATCH) ./scripts/release.sh major
