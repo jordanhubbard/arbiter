@@ -81,7 +81,7 @@ services:
       - AGENTICORP_PASSWORD=test-new-password-12345
       - TZ=UTC
       - TEMPORAL_HOST=temporal:7233
-      - TEMPORAL_NAMESPACE=agenticorp-default
+      - TEMPORAL_NAMESPACE=default
     networks:
       - agenticorp-network
     extra_hosts:

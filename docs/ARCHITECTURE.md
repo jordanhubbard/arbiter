@@ -567,7 +567,7 @@ projects:
 providers:
   - id: local-vllm
     name: Local vLLM
-    type: local
+    type: vllm
     endpoint: http://localhost:8000
     model: nvidia/Nemotron
 ```

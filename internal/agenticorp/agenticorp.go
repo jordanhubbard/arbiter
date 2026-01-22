@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -973,6 +974,7 @@ func (a *AgentiCorp) ListProviders() ([]*internalmodels.Provider, error) {
 }
 
 func (a *AgentiCorp) RegisterProvider(ctx context.Context, p *internalmodels.Provider) (*internalmodels.Provider, error) {
+	log.Printf("RegisterProvider called for: %s (type: %s, endpoint: %s)", p.ID, p.Type, p.Endpoint)
 	if a.database == nil {
 		return nil, fmt.Errorf("database not configured")
 	}
@@ -1038,6 +1040,7 @@ func (a *AgentiCorp) RegisterProvider(ctx context.Context, p *internalmodels.Pro
 	_ = a.ensureProviderHeartbeat(ctx, p.ID)
 
 	// Immediately attempt to get models from the provider to validate and update status
+	log.Printf("Launching health check goroutine for provider: %s", p.ID)
 	go a.checkProviderHealthAndActivate(p.ID)
 
 	return p, nil
@@ -1799,27 +1802,37 @@ func (a *AgentiCorp) StartDispatchLoop(ctx context.Context, interval time.Durati
 // and immediately activates it if so, without waiting for the heartbeat workflow
 func (a *AgentiCorp) checkProviderHealthAndActivate(providerID string) {
 	time.Sleep(300 * time.Millisecond)
+	log.Printf("Checking health for provider: %s", providerID)
 	models, err := a.GetProviderModels(context.Background(), providerID)
-	if err == nil && len(models) > 0 {
-		// Update provider status to active in both database and registry
-		if dbProvider, err := a.database.GetProvider(providerID); err == nil && dbProvider != nil {
-			dbProvider.Status = "active"
-			_ = a.database.UpsertProvider(dbProvider)
-			// Sync to registry so UI sees the updated status
-			a.providerRegistry.Upsert(&provider.ProviderConfig{
-				ID:                     dbProvider.ID,
-				Name:                   dbProvider.Name,
-				Type:                   dbProvider.Type,
-				Endpoint:               dbProvider.Endpoint,
-				Model:                  dbProvider.SelectedModel,
-				ConfiguredModel:        dbProvider.ConfiguredModel,
-				SelectedModel:          dbProvider.SelectedModel,
-				SelectedGPU:            dbProvider.SelectedGPU,
-				Status:                 "active",
-				LastHeartbeatAt:        dbProvider.LastHeartbeatAt,
-				LastHeartbeatLatencyMs: dbProvider.LastHeartbeatLatencyMs,
-			})
-		}
+	if err != nil {
+		log.Printf("Provider %s health check failed: %v", providerID, err)
+		return
+	}
+	if len(models) == 0 {
+		log.Printf("Provider %s returned no models", providerID)
+		return
+	}
+	
+	log.Printf("Provider %s is healthy, activating (models: %d)", providerID, len(models))
+	// Update provider status to active in both database and registry
+	if dbProvider, err := a.database.GetProvider(providerID); err == nil && dbProvider != nil {
+		dbProvider.Status = "active"
+		_ = a.database.UpsertProvider(dbProvider)
+		// Sync to registry so UI sees the updated status
+		a.providerRegistry.Upsert(&provider.ProviderConfig{
+			ID:                     dbProvider.ID,
+			Name:                   dbProvider.Name,
+			Type:                   dbProvider.Type,
+			Endpoint:               dbProvider.Endpoint,
+			Model:                  dbProvider.SelectedModel,
+			ConfiguredModel:        dbProvider.ConfiguredModel,
+			SelectedModel:          dbProvider.SelectedModel,
+			SelectedGPU:            dbProvider.SelectedGPU,
+			Status:                 "active",
+			LastHeartbeatAt:        dbProvider.LastHeartbeatAt,
+			LastHeartbeatLatencyMs: dbProvider.LastHeartbeatLatencyMs,
+		})
+		log.Printf("Provider %s activated successfully", providerID)
 	}
 
 	// Attach newly active provider to paused agents (best-effort)

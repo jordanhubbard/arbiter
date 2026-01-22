@@ -69,7 +69,7 @@ func (r *Registry) Register(config *ProviderConfig) error {
 	// Create protocol based on provider type
 	var protocol Protocol
 	switch config.Type {
-	case "openai", "anthropic", "local", "custom":
+	case "openai", "anthropic", "local", "custom", "vllm":
 		// All use OpenAI-compatible protocol
 		protocol = NewOpenAIProvider(config.Endpoint, config.APIKey)
 	case "ollama":
@@ -99,7 +99,7 @@ func (r *Registry) Upsert(config *ProviderConfig) error {
 
 	var protocol Protocol
 	switch config.Type {
-	case "openai", "anthropic", "local", "custom":
+	case "openai", "anthropic", "local", "custom", "vllm":
 		protocol = NewOpenAIProvider(config.Endpoint, config.APIKey)
 	case "ollama":
 		protocol = NewOllamaProvider(config.Endpoint)

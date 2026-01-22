@@ -39,7 +39,7 @@ security:
 
 temporal:
   host: localhost:7233
-  namespace: agenticorp-default
+  namespace: default
   task_queue: agenticorp-tasks
   workflow_execution_timeout: 24h
   workflow_task_timeout: 10s

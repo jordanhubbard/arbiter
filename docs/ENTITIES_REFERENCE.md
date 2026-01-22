@@ -192,7 +192,7 @@ An external LLM service that executes agent work.
 |-------|------|-------------|
 | `id` | string | Unique provider identifier |
 | `name` | string | Display name |
-| `type` | string | `local`, `ollama`, `openai`, `anthropic` |
+| `type` | string | `local`, `ollama`, `openai`, `anthropic`, `vllm`, `custom` |
 | `endpoint` | string | Base URL for API calls |
 | `model` | string | Model ID (e.g., `nvidia/Nemotron`) |
 | `configured_model` | string | Initially configured model |
