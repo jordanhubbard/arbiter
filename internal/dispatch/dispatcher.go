@@ -42,11 +42,12 @@ type DispatchResult struct {
 // Dispatcher is responsible for selecting ready work and executing it using agents/providers.
 // For now it focuses on turning beads into LLM tasks and storing the output back into bead context.
 type Dispatcher struct {
-	beads     *beads.Manager
-	projects  *project.Manager
-	agents    *agent.WorkerManager
-	providers *provider.Registry
-	eventBus  *eventbus.EventBus
+	beads         *beads.Manager
+	projects      *project.Manager
+	agents        *agent.WorkerManager
+	providers     *provider.Registry
+	eventBus      *eventbus.EventBus
+	personaMatcher *PersonaMatcher
 
 	mu     sync.RWMutex
 	status SystemStatus
@@ -54,11 +55,12 @@ type Dispatcher struct {
 
 func NewDispatcher(beadsMgr *beads.Manager, projMgr *project.Manager, agentMgr *agent.WorkerManager, registry *provider.Registry, eb *eventbus.EventBus) *Dispatcher {
 	d := &Dispatcher{
-		beads:     beadsMgr,
-		projects:  projMgr,
-		agents:    agentMgr,
-		providers: registry,
-		eventBus:  eb,
+		beads:          beadsMgr,
+		projects:       projMgr,
+		agents:         agentMgr,
+		providers:      registry,
+		eventBus:       eb,
+		personaMatcher: NewPersonaMatcher(),
 		status: SystemStatus{
 			State:     StatusParked,
 			Reason:    "not started",
@@ -150,6 +152,20 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 			ag = assigned
 			candidate = b
 			break
+		}
+
+		// Try persona-based routing first
+		personaHint := d.personaMatcher.ExtractPersonaHint(b)
+		if personaHint != "" {
+			matchedAgent := d.personaMatcher.FindAgentByPersonaHint(personaHint, idleAgents)
+			if matchedAgent != nil {
+				ag = matchedAgent
+				candidate = b
+				break
+			}
+			// If persona hint found but no matching agent, continue to try other beads
+			// This allows P1/P2 beads to wait for the right agent rather than being misassigned
+			continue
 		}
 
 		// Otherwise, pick any idle agent.

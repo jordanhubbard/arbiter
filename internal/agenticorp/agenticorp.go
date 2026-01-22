@@ -1140,6 +1140,7 @@ func (a *AgentiCorp) GetProviderModels(ctx context.Context, providerID string) (
 
 // ReplResult represents a CEO REPL response.
 type ReplResult struct {
+	BeadID       string `json:"bead_id"`
 	ProviderID   string `json:"provider_id"`
 	ProviderName string `json:"provider_name"`
 	Model        string `json:"model"`
@@ -1149,6 +1150,7 @@ type ReplResult struct {
 }
 
 // RunReplQuery sends a high-priority query through Temporal using the best provider.
+// All CEO queries automatically create P0 beads to preserve state.
 func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplResult, error) {
 	if strings.TrimSpace(message) == "" {
 		return nil, fmt.Errorf("message is required")
@@ -1160,6 +1162,47 @@ func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplRes
 		return nil, fmt.Errorf("database not configured")
 	}
 
+	// Extract persona hint and clean message if "persona: message" format is used
+	personaHint, cleanMessage := extractPersonaFromMessage(message)
+	
+	// Create a P0 bead for this CEO query
+	beadTitle := "CEO Query"
+	if personaHint != "" {
+		beadTitle = fmt.Sprintf("CEO Query for %s", personaHint)
+	}
+	
+	// Truncate message for title if it's short
+	if len(cleanMessage) < 80 {
+		beadTitle = fmt.Sprintf("CEO: %s", cleanMessage)
+	}
+	
+	bead, err := a.beadsManager.CreateBead(beadTitle, cleanMessage, models.BeadPriorityP0, "task", "agenticorp-self")
+	if err != nil {
+		// If bead creation fails, continue anyway but log it
+		log.Printf("Warning: Failed to create CEO query bead: %v", err)
+	}
+	
+	var beadID string
+	if bead != nil {
+		beadID = bead.ID
+		
+		// If persona hint was provided, add it to the bead description
+		if personaHint != "" {
+			updatedDesc := fmt.Sprintf("Persona: %s\n\n%s", personaHint, cleanMessage)
+			_ = a.beadsManager.UpdateBead(beadID, map[string]interface{}{
+				"description": updatedDesc,
+			})
+		}
+		
+		// Add CEO context
+		_ = a.beadsManager.UpdateBead(beadID, map[string]interface{}{
+			"context": map[string]string{
+				"source": "ceo-repl",
+				"created_by": "ceo",
+			},
+		})
+	}
+
 	providerRecord, err := a.selectBestProviderForRepl()
 	if err != nil {
 		return nil, err
@@ -1169,14 +1212,39 @@ func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplRes
 	input := workflows.ProviderQueryWorkflowInput{
 		ProviderID:   providerRecord.ID,
 		SystemPrompt: systemPrompt,
-		Message:      message,
+		Message:      cleanMessage,
 		Temperature:  0.2,
 		MaxTokens:    1200,
 	}
 
 	result, err := a.temporalManager.RunProviderQueryWorkflow(ctx, input)
 	if err != nil {
+		// Update bead with error if it was created
+		if beadID != "" {
+			_ = a.beadsManager.UpdateBead(beadID, map[string]interface{}{
+				"context": map[string]string{
+					"source": "ceo-repl",
+					"created_by": "ceo",
+					"error": err.Error(),
+				},
+			})
+		}
 		return nil, err
+	}
+
+	// Update bead with response
+	if beadID != "" {
+		_ = a.beadsManager.UpdateBead(beadID, map[string]interface{}{
+			"context": map[string]string{
+				"source": "ceo-repl",
+				"created_by": "ceo",
+				"response": result.Response,
+				"provider_id": providerRecord.ID,
+				"model": result.Model,
+				"tokens_used": fmt.Sprintf("%d", result.TokensUsed),
+			},
+			"status": models.BeadStatusClosed,
+		})
 	}
 
 	model := result.Model
@@ -1187,6 +1255,7 @@ func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplRes
 		model = providerRecord.Model
 	}
 	return &ReplResult{
+		BeadID:       beadID,
 		ProviderID:   providerRecord.ID,
 		ProviderName: providerRecord.Name,
 		Model:        model,
@@ -1194,6 +1263,42 @@ func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplRes
 		TokensUsed:   result.TokensUsed,
 		LatencyMs:    result.LatencyMs,
 	}, nil
+}
+
+// extractPersonaFromMessage extracts persona hint from "persona: message" format
+// Returns (personaHint, cleanMessage)
+func extractPersonaFromMessage(message string) (string, string) {
+	message = strings.TrimSpace(message)
+	
+	// Check for "persona: rest of message" format
+	if idx := strings.Index(message, ":"); idx > 0 && idx < 50 {
+		potentialPersona := strings.TrimSpace(message[:idx])
+		// Check if it looks like a persona (single word or hyphenated, lowercase)
+		if isLikelyPersona(potentialPersona) {
+			restOfMessage := strings.TrimSpace(message[idx+1:])
+			return potentialPersona, restOfMessage
+		}
+	}
+	
+	return "", message
+}
+
+func isLikelyPersona(s string) bool {
+	s = strings.ToLower(s)
+	// Must be 3-40 characters, contain only letters, hyphens, and spaces
+	if len(s) < 3 || len(s) > 40 {
+		return false
+	}
+	for _, ch := range s {
+		if !((ch >= 'a' && ch <= 'z') || ch == '-' || ch == ' ') {
+			return false
+		}
+	}
+	// Can't start or end with hyphen/space
+	if s[0] == '-' || s[0] == ' ' || s[len(s)-1] == '-' || s[len(s)-1] == ' ' {
+		return false
+	}
+	return true
 }
 
 func (a *AgentiCorp) selectBestProviderForRepl() (*internalmodels.Provider, error) {
