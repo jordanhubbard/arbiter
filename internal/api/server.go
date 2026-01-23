@@ -281,6 +281,13 @@ func (r *statusRecorder) WriteHeader(code int) {
 	r.ResponseWriter.WriteHeader(code)
 }
 
+// Flush implements http.Flusher to support streaming
+func (r *statusRecorder) Flush() {
+	if flusher, ok := r.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func (r *statusRecorder) Write(b []byte) (int, error) {
 	if r.statusCode == 0 {
 		r.statusCode = http.StatusOK
