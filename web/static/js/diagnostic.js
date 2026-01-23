@@ -138,17 +138,35 @@
         
         console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
         
-        // Auto-file bug if critical errors found
-        if (diagnostics.errors.length > 0) {
+        // Auto-file bug only if truly critical errors found
+        // Don't auto-file for transient network issues or expected warnings
+        const hasCriticalErrors = diagnostics.errors.some(err => 
+            err.includes('DOM element') ||           // Missing UI elements
+            err.includes('state object not defined') // Critical state issues
+        );
+        
+        if (hasCriticalErrors && diagnostics.errors.length > 0) {
+            console.log('%c🐛 Critical errors detected - auto-filing bug report...', 'color: red; font-weight: bold');
             autoFileBugReport();
+        } else if (diagnostics.errors.length > 0) {
+            console.log('%c⚠️  Non-critical errors detected - not auto-filing', 'color: orange; font-weight: bold');
         }
     }
     
-    // Capture console errors
+    // Capture console errors (but filter out expected API errors)
     window._agenticorpErrors = [];
     const originalError = console.error;
     console.error = function(...args) {
-        window._agenticorpErrors.push(args.join(' '));
+        const errorMsg = args.join(' ');
+        // Filter out expected errors that are handled gracefully
+        const isExpectedError = 
+            errorMsg.includes('Failed to load') ||  // Normal data loading errors
+            errorMsg.includes('API Error:') ||      // API call errors (already shown in toast)
+            errorMsg.includes('Request failed');     // Generic request failures
+        
+        if (!isExpectedError) {
+            window._agenticorpErrors.push(errorMsg);
+        }
         originalError.apply(console, args);
     };
     
