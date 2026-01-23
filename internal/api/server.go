@@ -13,6 +13,7 @@ import (
 	"github.com/jordanhubbard/agenticorp/internal/auth"
 	"github.com/jordanhubbard/agenticorp/internal/cache"
 	"github.com/jordanhubbard/agenticorp/internal/keymanager"
+	"github.com/jordanhubbard/agenticorp/internal/logging"
 	"github.com/jordanhubbard/agenticorp/pkg/config"
 	"github.com/jordanhubbard/agenticorp/pkg/models"
 )
@@ -23,6 +24,7 @@ type Server struct {
 	keyManager      *keymanager.KeyManager
 	authManager     *auth.Manager
 	analyticsLogger *analytics.Logger
+	logManager      *logging.Manager
 	cache           *cache.Cache
 	config          *config.Config
 	apiFailureMu    sync.Mutex
@@ -38,6 +40,12 @@ func NewServer(arb *agenticorp.AgentiCorp, km *keymanager.KeyManager, am *auth.M
 		if err == nil {
 			analyticsLogger = analytics.NewLogger(storage, analytics.DefaultPrivacyConfig())
 		}
+	}
+
+	// Initialize logging manager
+	var logMgr *logging.Manager
+	if arb != nil && arb.GetDatabase() != nil {
+		logMgr = logging.NewManager(arb.GetDatabase().DB())
 	}
 
 	// Initialize cache with config
@@ -82,6 +90,7 @@ func NewServer(arb *agenticorp.AgentiCorp, km *keymanager.KeyManager, am *auth.M
 		keyManager:      km,
 		authManager:     am,
 		analyticsLogger: analyticsLogger,
+		logManager:      logMgr,
 		cache:           responseCache,
 		config:          cfg,
 		apiFailureLast:  make(map[string]time.Time),
@@ -188,6 +197,11 @@ func (s *Server) SetupRoutes() http.Handler {
 
 	// Auto-filed bug reports
 	mux.HandleFunc("/api/v1/beads/auto-file", s.HandleAutoFileBug)
+
+	// Logging endpoints
+	mux.HandleFunc("/api/v1/logs/recent", s.HandleLogsRecent)
+	mux.HandleFunc("/api/v1/logs/stream", s.HandleLogsStream)
+	mux.HandleFunc("/api/v1/logs/export", s.HandleLogsExport)
 
 	// Chat completions (with streaming support)
 	mux.HandleFunc("/api/v1/chat/completions/stream", s.handleStreamChatCompletion)

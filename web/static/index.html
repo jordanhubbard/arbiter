@@ -42,6 +42,7 @@
             <button class="view-tab" data-target="personas" role="tab" aria-selected="false">Personas</button>
             <button class="view-tab" data-target="decisions" role="tab" aria-selected="false">Decisions</button>
             <button class="view-tab" data-target="repl" role="tab" aria-selected="false">CEO REPL</button>
+            <button class="view-tab" data-target="logs" role="tab" aria-selected="false">Logs</button>
             <button class="view-tab" data-target="streaming-test" role="tab" aria-selected="false">Streaming Test</button>
             <button class="view-tab" data-target="users" role="tab" aria-selected="false">Users</button>
             <button class="view-tab" data-target="analytics" role="tab" aria-selected="false">Analytics</button>
@@ -227,6 +228,56 @@
                 </div>
                 <div id="repl-response" class="repl-response" aria-live="polite"></div>
             </div>
+        </section>
+
+        <!-- Logs Section -->
+        <section id="logs" class="view-panel" role="tabpanel" aria-label="System Logs" hidden>
+            <h2><span aria-hidden="true">📋</span> System Logs & Metrics</h2>
+            
+            <!-- Metrics Panel -->
+            <div id="log-metrics" class="log-metrics"></div>
+            
+            <!-- Log Controls -->
+            <div class="toolbar" role="region" aria-label="Log controls">
+                <div class="toolbar-row">
+                    <div class="field">
+                        <label for="log-level-filter">Level</label>
+                        <select id="log-level-filter">
+                            <option value="">All</option>
+                            <option value="debug">Debug</option>
+                            <option value="info">Info</option>
+                            <option value="warn">Warn</option>
+                            <option value="error">Error</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="log-source-filter">Source</label>
+                        <select id="log-source-filter">
+                            <option value="">All</option>
+                            <option value="agenticorp">AgentiCorp</option>
+                            <option value="temporal">Temporal</option>
+                            <option value="agent">Agent</option>
+                            <option value="provider">Provider</option>
+                            <option value="dispatcher">Dispatcher</option>
+                            <option value="database">Database</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="log-search">Search</label>
+                        <input type="text" id="log-search" placeholder="Search messages..." autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label><input type="checkbox" id="log-autoscroll" checked> Auto-scroll</label>
+                    </div>
+                    <div class="field">
+                        <button type="button" onclick="logViewer.clearLogs()">Clear</button>
+                        <button type="button" onclick="logViewer.exportLogs()">Export</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Log Viewer -->
+            <div id="log-viewer" class="log-viewer"></div>
         </section>
 
         <!-- Streaming Test Section -->
@@ -527,6 +578,7 @@
         <p>AgentiCorp v1.0.0 | <a href="/api/v1/health">API Health</a> | <a href="/api/openapi.yaml">OpenAPI Spec</a></p>
     </footer>
 
+    <script src="/static/js/logs.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

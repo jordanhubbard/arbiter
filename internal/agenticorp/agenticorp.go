@@ -2063,16 +2063,40 @@ func (a *AgentiCorp) attachProviderToPausedAgents(ctx context.Context, providerI
 
 	log.Printf("Found %d agent(s) to check for provider %s attachment", len(agents), providerID)
 	attachedCount := 0
+	updatedCount := 0
 	skippedCount := 0
 	for _, ag := range agents {
 		if ag == nil {
 			continue
 		}
+		
+		// If agent already has a provider but is still paused, just update the status
 		if ag.ProviderID != "" {
-			log.Printf("Skipping agent %s (%s) - already has provider %s", ag.ID, ag.Name, ag.ProviderID)
-			skippedCount++
+			if ag.Status == "paused" {
+				log.Printf("Agent %s (%s) has provider %s but is still paused - updating to idle", ag.ID, ag.Name, ag.ProviderID)
+				ag.Status = "idle"
+				
+				// Update database
+				if err := a.database.UpsertAgent(ag); err != nil {
+					log.Printf("Failed to update agent %s status in database: %v", ag.ID, err)
+					continue
+				}
+				
+				// Update in-memory agent status
+				if err := a.agentManager.UpdateAgentStatus(ag.ID, "idle"); err != nil {
+					log.Printf("Failed to update agent %s status in memory: %v", ag.ID, err)
+					continue
+				}
+				
+				updatedCount++
+				log.Printf("Updated agent %s (%s) status from paused to idle (DB + memory)", ag.ID, ag.Name)
+			} else {
+				log.Printf("Skipping agent %s (%s) - already has provider %s and status %s", ag.ID, ag.Name, ag.ProviderID, ag.Status)
+				skippedCount++
+			}
 			continue
 		}
+		
 		// Attach persona for prompt context
 		if ag.Persona == nil && ag.PersonaName != "" {
 			persona, err := a.personaManager.LoadPersona(ag.PersonaName)
@@ -2098,7 +2122,8 @@ func (a *AgentiCorp) attachProviderToPausedAgents(ctx context.Context, providerI
 		attachedCount++
 		log.Printf("Successfully attached provider %s to agent %s (%s)", providerID, ag.ID, ag.Name)
 	}
-	if attachedCount > 0 {
-		log.Printf("Attached provider %s to %d agent(s)", providerID, attachedCount)
+	if attachedCount > 0 || updatedCount > 0 {
+		log.Printf("Provider %s: attached to %d agent(s), updated status for %d agent(s), skipped %d agent(s)", 
+			providerID, attachedCount, updatedCount, skippedCount)
 	}
 }

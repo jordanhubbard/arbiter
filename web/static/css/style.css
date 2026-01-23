@@ -998,3 +998,97 @@ footer a:hover {
         font-size: 0.75rem;
     }
 }
+
+/* Logs Section Styles */
+.log-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.log-metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-2);
+}
+
+.log-metric-card h4 {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-1);
+}
+
+.log-metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.log-viewer {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-2);
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 0.875rem;
+}
+
+.log-entry {
+    padding: var(--space-1);
+    border-bottom: 1px solid var(--border-color);
+    display: grid;
+    grid-template-columns: auto auto auto 1fr;
+    gap: var(--space-1);
+    align-items: start;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.log-level {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.log-debug { background: #e0e7ff; color: #4338ca; }
+.log-info { background: #dbeafe; color: #1d4ed8; }
+.log-warn { background: #fed7aa; color: #c2410c; }
+.log-error { background: #fee2e2; color: #b91c1c; }
+
+.log-source {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.log-message {
+    word-break: break-word;
+}
+
+.log-metadata {
+    grid-column: 1 / -1;
+    margin-top: var(--space-1);
+    padding: var(--space-1);
+    background: var(--light-bg);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.log-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--space-3);
+}
