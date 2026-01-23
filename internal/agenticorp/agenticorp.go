@@ -407,12 +407,36 @@ func (a *AgentiCorp) Initialize(ctx context.Context) error {
 		}
 	}
 
+	// Ensure all projects are persisted to the database before creating agents (to avoid FK constraint failures)
+	if a.database != nil {
+		log.Printf("Persisting %d project(s) to database before agent creation", len(projectValues))
+		for i := range projectValues {
+			p := &projectValues[i]
+			if err := a.database.UpsertProject((*models.Project)(p)); err != nil {
+				log.Printf("Warning: Failed to persist project %s: %v", p.ID, err)
+			} else {
+				log.Printf("Successfully persisted project %s to database", p.ID)
+			}
+		}
+	}
+
 	// Ensure default agents are assigned for each project.
 	for _, p := range projectValues {
 		if p.ID == "" {
 			continue
 		}
 		_ = a.ensureDefaultAgents(ctx, p.ID)
+	}
+
+	// Attach healthy providers to any paused agents after creating default agents
+	// Small delay to ensure agents are persisted to database
+	time.Sleep(500 * time.Millisecond)
+	healthyProviders := a.providerRegistry.ListActive()
+	for _, provider := range healthyProviders {
+		if provider != nil && provider.Config != nil {
+			log.Printf("Attaching healthy provider %s to paused agents on startup", provider.Config.ID)
+			a.attachProviderToPausedAgents(ctx, provider.Config.ID)
+		}
 	}
 
 	// Register dispatch activities and start the Temporal worker if configured.
@@ -920,7 +944,11 @@ func (a *AgentiCorp) CreateAgent(ctx context.Context, name, personaName, project
 
 	// Persist agent to the configuration database
 	if a.database != nil {
-		_ = a.database.UpsertAgent(agent)
+		if err := a.database.UpsertAgent(agent); err != nil {
+			log.Printf("Warning: Failed to persist agent %s to database: %v", agent.ID, err)
+		} else {
+			log.Printf("Persisted agent %s (%s) to database with status: %s", agent.ID, agent.Name, agent.Status)
+		}
 	}
 
 	return agent, nil
@@ -2029,25 +2057,48 @@ func (a *AgentiCorp) attachProviderToPausedAgents(ctx context.Context, providerI
 
 	agents, err := a.database.ListAgents()
 	if err != nil {
+		log.Printf("Failed to list agents for provider attachment: %v", err)
 		return
 	}
 
+	log.Printf("Found %d agent(s) to check for provider %s attachment", len(agents), providerID)
+	attachedCount := 0
+	skippedCount := 0
 	for _, ag := range agents {
-		if ag == nil || ag.ProviderID != "" {
+		if ag == nil {
+			continue
+		}
+		if ag.ProviderID != "" {
+			log.Printf("Skipping agent %s (%s) - already has provider %s", ag.ID, ag.Name, ag.ProviderID)
+			skippedCount++
 			continue
 		}
 		// Attach persona for prompt context
 		if ag.Persona == nil && ag.PersonaName != "" {
-			ag.Persona, _ = a.personaManager.LoadPersona(ag.PersonaName)
+			persona, err := a.personaManager.LoadPersona(ag.PersonaName)
+			if err != nil {
+				log.Printf("Failed to load persona %s for agent %s: %v", ag.PersonaName, ag.ID, err)
+				continue
+			}
+			ag.Persona = persona
 		}
 		ag.ProviderID = providerID
 		ag.Status = "idle"
-		_ = a.database.UpsertAgent(ag)
+		if err := a.database.UpsertAgent(ag); err != nil {
+			log.Printf("Failed to upsert agent %s with provider %s: %v", ag.ID, providerID, err)
+			continue
+		}
 		if _, err := a.agentManager.RestoreAgentWorker(ctx, ag); err != nil {
+			log.Printf("Failed to restore agent worker %s: %v", ag.ID, err)
 			continue
 		}
 		if ag.ProjectID != "" {
 			_ = a.projectManager.AddAgentToProject(ag.ProjectID, ag.ID)
 		}
+		attachedCount++
+		log.Printf("Successfully attached provider %s to agent %s (%s)", providerID, ag.ID, ag.Name)
+	}
+	if attachedCount > 0 {
+		log.Printf("Attached provider %s to %d agent(s)", providerID, attachedCount)
 	}
 }

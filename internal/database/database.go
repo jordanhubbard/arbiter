@@ -450,15 +450,27 @@ func (d *Database) UpsertAgent(agent *models.Agent) error {
 			last_active = excluded.last_active
 	`
 
+	// Convert empty strings to nil for SQL NULL (for FK constraints)
+	var providerID, currentBead, projectID interface{}
+	if agent.ProviderID != "" {
+		providerID = agent.ProviderID
+	}
+	if agent.CurrentBead != "" {
+		currentBead = agent.CurrentBead
+	}
+	if agent.ProjectID != "" {
+		projectID = agent.ProjectID
+	}
+
 	_, err := d.db.Exec(query,
 		agent.ID,
 		agent.Name,
 		agent.Role,
 		agent.PersonaName,
-		agent.ProviderID,
+		providerID,
 		agent.Status,
-		agent.CurrentBead,
-		agent.ProjectID,
+		currentBead,
+		projectID,
 		agent.StartedAt,
 		agent.LastActive,
 	)
@@ -483,20 +495,31 @@ func (d *Database) ListAgents() ([]*models.Agent, error) {
 	var agents []*models.Agent
 	for rows.Next() {
 		a := &models.Agent{}
+		var providerID, currentBead, projectID sql.NullString
 		err := rows.Scan(
 			&a.ID,
 			&a.Name,
 			&a.Role,
 			&a.PersonaName,
-			&a.ProviderID,
+			&providerID,
 			&a.Status,
-			&a.CurrentBead,
-			&a.ProjectID,
+			&currentBead,
+			&projectID,
 			&a.StartedAt,
 			&a.LastActive,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan agent: %w", err)
+		}
+		// Convert sql.NullString to regular strings
+		if providerID.Valid {
+			a.ProviderID = providerID.String
+		}
+		if currentBead.Valid {
+			a.CurrentBead = currentBead.String
+		}
+		if projectID.Valid {
+			a.ProjectID = projectID.String
 		}
 		agents = append(agents, a)
 	}
