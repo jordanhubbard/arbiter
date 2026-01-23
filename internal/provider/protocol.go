@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -126,9 +127,9 @@ func (p *OpenAIProvider) CreateChatCompletion(ctx context.Context, req *ChatComp
 		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	// Unmarshal response
+	// Extract and unmarshal JSON response (handling extraneous text)
 	var completionResp ChatCompletionResponse
-	if err := json.Unmarshal(respBody, &completionResp); err != nil {
+	if err := unmarshalJSON(respBody, &completionResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
@@ -168,13 +169,135 @@ func (p *OpenAIProvider) GetModels(ctx context.Context) ([]Model, error) {
 		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	// Unmarshal response
+	// Extract and unmarshal JSON response (handling extraneous text)
 	var modelsResp struct {
 		Data []Model `json:"data"`
 	}
-	if err := json.Unmarshal(respBody, &modelsResp); err != nil {
+	if err := unmarshalJSON(respBody, &modelsResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	return modelsResp.Data, nil
+}
+
+// unmarshalJSON extracts and unmarshals JSON from a response body that may contain
+// extraneous text before or after the JSON. This ensures we follow the OpenAI API
+// specification while being robust to extra content from providers.
+func unmarshalJSON(data []byte, v interface{}) error {
+	// First, try direct unmarshal (most common case - pure JSON)
+	if err := json.Unmarshal(data, v); err == nil {
+		return nil
+	}
+
+	// If that fails, extract JSON from the response
+	jsonData := extractJSON(data)
+	if jsonData == nil {
+		return fmt.Errorf("no valid JSON found in response: %s", string(data))
+	}
+
+	// Try to unmarshal the extracted JSON
+	if err := json.Unmarshal(jsonData, v); err != nil {
+		return fmt.Errorf("failed to unmarshal extracted JSON: %w (data: %s)", err, string(jsonData))
+	}
+
+	return nil
+}
+
+// extractJSON finds and extracts valid JSON from a byte slice that may contain
+// extraneous text. It looks for JSON objects ({...}) or arrays ([...]).
+func extractJSON(data []byte) []byte {
+	// Trim whitespace
+	data = bytes.TrimSpace(data)
+
+	// Look for JSON object start
+	if idx := bytes.IndexByte(data, '{'); idx != -1 {
+		// Find the matching closing brace
+		if closing := findClosingBrace(data[idx:]); closing != -1 {
+			return data[idx : idx+closing+1]
+		}
+	}
+
+	// Look for JSON array start
+	if idx := bytes.IndexByte(data, '['); idx != -1 {
+		// Find the matching closing bracket
+		if closing := findClosingBracket(data[idx:]); closing != -1 {
+			return data[idx : idx+closing+1]
+		}
+	}
+
+	return nil
+}
+
+// findClosingBrace finds the index of the closing brace that matches the opening brace
+// at position 0, accounting for nested braces and strings.
+func findClosingBrace(data []byte) int {
+	depth := 0
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(data); i++ {
+		if escaped {
+			escaped = false
+			continue
+		}
+
+		switch data[i] {
+		case '\\':
+			if inString {
+				escaped = true
+			}
+		case '"':
+			inString = !inString
+		case '{':
+			if !inString {
+				depth++
+			}
+		case '}':
+			if !inString {
+				depth--
+				if depth == 0 {
+					return i
+				}
+			}
+		}
+	}
+
+	return -1
+}
+
+// findClosingBracket finds the index of the closing bracket that matches the opening bracket
+// at position 0, accounting for nested brackets and strings.
+func findClosingBracket(data []byte) int {
+	depth := 0
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(data); i++ {
+		if escaped {
+			escaped = false
+			continue
+		}
+
+		switch data[i] {
+		case '\\':
+			if inString {
+				escaped = true
+			}
+		case '"':
+			inString = !inString
+		case '[':
+			if !inString {
+				depth++
+			}
+		case ']':
+			if !inString {
+				depth--
+				if depth == 0 {
+					return i
+				}
+			}
+		}
+	}
+
+	return -1
 }
