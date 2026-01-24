@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jordanhubbard/agenticorp/internal/actions"
 	"github.com/jordanhubbard/agenticorp/internal/provider"
 	"github.com/jordanhubbard/agenticorp/pkg/models"
 )
@@ -188,6 +189,8 @@ func (w *Worker) buildSystemPrompt() string {
 		prompt += fmt.Sprintf("# Decision Making\n%s\n\n", persona.DecisionInstructions)
 	}
 
+	prompt += fmt.Sprintf("# Required Output Format\n%s\n\n", actions.ActionPrompt)
+
 	return prompt
 }
 
@@ -230,6 +233,7 @@ type TaskResult struct {
 	WorkerID    string
 	AgentID     string
 	Response    string
+	Actions     []actions.Result
 	TokensUsed  int
 	CompletedAt time.Time
 	Success     bool

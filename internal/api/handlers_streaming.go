@@ -5,13 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/jordanhubbard/agenticorp/internal/actions"
 	"github.com/jordanhubbard/agenticorp/internal/provider"
 )
 
 // StreamChatCompletionRequest represents a request for streaming chat completion
 type StreamChatCompletionRequest struct {
+	AgentID     string                 `json:"agent_id,omitempty"`
+	BeadID      string                 `json:"bead_id,omitempty"`
+	ProjectID   string                 `json:"project_id,omitempty"`
 	ProviderID  string                 `json:"provider_id"`
 	Model       string                 `json:"model,omitempty"`
 	Messages    []provider.ChatMessage `json:"messages"`
@@ -79,7 +84,7 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 	// Create provider request
 	providerReq := &provider.ChatCompletionRequest{
 		Model:       req.Model,
-		Messages:    req.Messages,
+		Messages:    appendActionPrompt(req.Messages),
 		Temperature: req.Temperature,
 		MaxTokens:   req.MaxTokens,
 		Stream:      true,
@@ -89,6 +94,8 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
 	defer cancel()
 
+	var streamedText strings.Builder
+
 	// Stream response via registry
 	err = providerReg.SendChatCompletionStream(ctx, req.ProviderID, providerReq, func(chunk *provider.StreamChunk) error {
 		// Check if client disconnected
@@ -96,6 +103,11 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		// Capture chunk text for action parsing
+		if len(chunk.Choices) > 0 {
+			streamedText.WriteString(chunk.Choices[0].Delta.Content)
 		}
 
 		// Send chunk to client
@@ -118,6 +130,26 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 		fmt.Fprintf(w, "data: %s\n\n", errorData)
 		flusher.Flush()
 		return
+	}
+
+	// Enforce strict JSON action output
+	if router := s.agenticorp.GetActionRouter(); router != nil {
+		raw := streamedText.String()
+		actx := actions.ActionContext{
+			AgentID:   req.AgentID,
+			BeadID:    req.BeadID,
+			ProjectID: defaultProjectID(req.ProjectID),
+		}
+		env, parseErr := actions.DecodeStrict([]byte(raw))
+		if parseErr != nil {
+			router.AutoFileParseFailure(ctx, actx, parseErr, raw)
+			errorData, _ := json.Marshal(map[string]string{"error": fmt.Sprintf("action parse failed: %v", parseErr)})
+			fmt.Fprintf(w, "event: error\n")
+			fmt.Fprintf(w, "data: %s\n\n", errorData)
+			flusher.Flush()
+		} else {
+			_, _ = router.Execute(ctx, env, actx)
+		}
 	}
 
 	// Send completion event
@@ -169,7 +201,7 @@ func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	// Create provider request
 	providerReq := &provider.ChatCompletionRequest{
 		Model:       req.Model,
-		Messages:    req.Messages,
+		Messages:    appendActionPrompt(req.Messages),
 		Temperature: req.Temperature,
 		MaxTokens:   req.MaxTokens,
 		Stream:      false,
@@ -187,5 +219,39 @@ func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if router := s.agenticorp.GetActionRouter(); router != nil {
+		raw := ""
+		if len(resp.Choices) > 0 {
+			raw = resp.Choices[0].Message.Content
+		}
+		actx := actions.ActionContext{
+			AgentID:   req.AgentID,
+			BeadID:    req.BeadID,
+			ProjectID: defaultProjectID(req.ProjectID),
+		}
+		env, parseErr := actions.DecodeStrict([]byte(raw))
+		if parseErr != nil {
+			router.AutoFileParseFailure(r.Context(), actx, parseErr, raw)
+			s.respondError(w, http.StatusBadRequest, fmt.Sprintf("action parse failed: %v", parseErr))
+			return
+		}
+		_, _ = router.Execute(r.Context(), env, actx)
+	}
+
 	s.respondJSON(w, http.StatusOK, resp)
+}
+
+func appendActionPrompt(messages []provider.ChatMessage) []provider.ChatMessage {
+	prompt := strings.TrimSpace(actions.ActionPrompt)
+	if prompt == "" {
+		return messages
+	}
+	return append([]provider.ChatMessage{{Role: "system", Content: prompt}}, messages...)
+}
+
+func defaultProjectID(projectID string) string {
+	if projectID != "" {
+		return projectID
+	}
+	return "agenticorp-self"
 }

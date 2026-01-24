@@ -14,6 +14,7 @@ const AUTH_ENABLED = false;
 // State
 let state = {
     beads: [],
+    ceoBeads: null,
     agents: [],
     projects: [],
     personas: [],
@@ -342,6 +343,7 @@ async function loadAll() {
             loadUsers().catch(err => { console.error('[AgentiCorp] Failed to load users:', err); state.users = []; }),
             loadAPIKeys().catch(err => { console.error('[AgentiCorp] Failed to load API keys:', err); state.apiKeys = []; })
         ]);
+        await loadCeoBeads().catch(err => { console.error('[AgentiCorp] Failed to load CEO beads:', err); state.ceoBeads = []; });
         console.log('[AgentiCorp] Data loaded successfully:', {
             beads: state.beads?.length || 0,
             projects: state.projects?.length || 0,
@@ -571,6 +573,16 @@ async function loadBeads() {
     state.beads = await apiCall('/beads');
 }
 
+async function loadCeoBeads() {
+    const ceoIds = getCeoAgentIds();
+    if (ceoIds.length === 0) {
+        state.ceoBeads = [];
+        return;
+    }
+    const query = encodeURIComponent(ceoIds.join(','));
+    state.ceoBeads = await apiCall(`/beads?assigned_to=${query}`);
+}
+
 async function loadAgents() {
     state.agents = await apiCall('/agents');
 }
@@ -623,6 +635,7 @@ function render() {
     renderProjects();
     renderPersonas();
     renderDecisions();
+    renderCeoBeads();
     renderUsers();
 }
 
@@ -1474,7 +1487,7 @@ function renderBeadCard(bead) {
     const typeClass = bead.type === 'decision' ? 'decision' : '';
 
     return `
-        <button type="button" class="bead-card ${priorityClass} ${typeClass}" onclick="viewBead('${bead.id}')" aria-label="View bead: ${escapeHtml(bead.title)}">
+        <button type="button" class="bead-card ${priorityClass} ${typeClass}" onclick="viewBead('${bead.id}')" ondblclick="openBeadDetails('${bead.id}')" aria-label="View bead: ${escapeHtml(bead.title)}">
             <div class="bead-title">${escapeHtml(bead.title)}</div>
             <div class="bead-meta">
                 <span class="badge priority-${bead.priority}">P${bead.priority}</span>
@@ -1483,6 +1496,163 @@ function renderBeadCard(bead) {
             </div>
         </button>
     `;
+}
+
+function updateBeadCache(updatedBead) {
+    if (!updatedBead || !updatedBead.id) return;
+    const applyUpdate = (list) => {
+        if (!Array.isArray(list)) return list;
+        return list.map((bead) => (bead.id === updatedBead.id ? { ...bead, ...updatedBead } : bead));
+    };
+    state.beads = applyUpdate(state.beads);
+    if (Array.isArray(state.ceoBeads)) {
+        state.ceoBeads = applyUpdate(state.ceoBeads);
+    }
+}
+
+async function saveBeadUpdate(beadId, payload, { successMessage = 'Bead updated' } = {}) {
+    const existing = state.beads.find((b) => b.id === beadId);
+    const previous = existing ? JSON.parse(JSON.stringify(existing)) : null;
+    if (existing) {
+        updateBeadCache({ ...existing, ...payload });
+        render();
+    }
+
+    try {
+        const updated = await apiCall(`/beads/${beadId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        });
+        updateBeadCache(updated);
+        render();
+        showToast(successMessage, 'success');
+        return updated;
+    } catch (error) {
+        if (previous) {
+            updateBeadCache(previous);
+            render();
+        }
+        throw error;
+    }
+}
+
+function normalizeAssignee(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function isCeoAssignee(value) {
+    const normalized = normalizeAssignee(value);
+    return normalized && (normalized === 'ceo' || normalized === 'user-ceo' || normalized === 'human-ceo' || normalized.includes('ceo'));
+}
+
+function getCeoAgentIds() {
+    return (state.agents || [])
+        .filter((agent) => {
+            const persona = normalizeAssignee(agent.persona_name);
+            const name = normalizeAssignee(agent.name);
+            const role = normalizeAssignee(agent.role);
+            return persona.endsWith('/ceo') || persona === 'ceo' || role === 'ceo' || name.includes('ceo');
+        })
+        .map((agent) => normalizeAssignee(agent.id));
+}
+
+function parseBeadComments(context) {
+    if (!context || !context.comments) return [];
+    try {
+        const parsed = JSON.parse(context.comments);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function getBeadCommentCount(bead) {
+    return parseBeadComments(bead.context || {}).length;
+}
+
+function getLatestBeadComment(bead) {
+    const comments = parseBeadComments(bead.context || {});
+    if (comments.length === 0) return null;
+    return comments[comments.length - 1];
+}
+
+function renderCeoBeads() {
+    const container = document.getElementById('ceo-assigned-beads');
+    if (!container) return;
+
+    const ceoAgentIds = new Set(getCeoAgentIds());
+    const sourceBeads = Array.isArray(state.ceoBeads) ? state.ceoBeads : state.beads;
+    const beads = (sourceBeads || []).filter((bead) => {
+        const assigned = normalizeAssignee(bead.assigned_to);
+        if (!assigned) return false;
+        if (ceoAgentIds.size > 0) {
+            return ceoAgentIds.has(assigned);
+        }
+        return isCeoAssignee(assigned);
+    });
+    if (beads.length === 0) {
+        container.innerHTML = renderEmptyState('No beads assigned to the CEO', 'Escalated or assigned beads will appear here.');
+        return;
+    }
+
+    const agents = (state.agents || []).filter((a) => (a.persona_name || '') !== 'templates');
+    const agentOptions = agents
+        .map((agent) => {
+            const displayName = formatAgentDisplayName(agent.name || extractRoleName(agent.persona_name || ''));
+            return `<option value="${escapeHtml(agent.id)}">${escapeHtml(displayName)} (${escapeHtml(agent.id)})</option>`;
+        })
+        .join('');
+
+    container.innerHTML = beads
+        .map((bead) => {
+            const commentCount = getBeadCommentCount(bead);
+            const latestComment = getLatestBeadComment(bead);
+            const dispatchKey = `dispatchBead:${bead.id}`;
+            const closeKey = `closeBead:${bead.id}`;
+            const commentKey = `commentBead:${bead.id}`;
+
+            return `
+                <div class="ceo-bead-card">
+                    <div class="ceo-bead-header">
+                        <button type="button" class="ceo-bead-title" onclick="viewBead('${escapeHtml(bead.id)}')" aria-label="View bead ${escapeHtml(bead.title)}">
+                            ${escapeHtml(bead.title)}
+                        </button>
+                        <div class="ceo-bead-meta">
+                            <span class="badge priority-${bead.priority}">P${bead.priority}</span>
+                            <span class="badge">${escapeHtml(bead.type || 'task')}</span>
+                            <span class="badge">${escapeHtml(bead.status || 'open')}</span>
+                            <span class="badge">${commentCount} comment${commentCount === 1 ? '' : 's'}</span>
+                        </div>
+                    </div>
+                    <div class="small"><strong>ID:</strong> ${escapeHtml(bead.id)} • <strong>Project:</strong> ${escapeHtml(bead.project_id || 'n/a')}</div>
+                    ${latestComment ? `
+                        <div class="ceo-bead-comment">
+                            <div class="small"><strong>Latest comment</strong> · ${escapeHtml(latestComment.author || 'unknown')} · ${escapeHtml((latestComment.timestamp || '').substring(0, 19).replace('T', ' '))}</div>
+                            <div class="small ceo-bead-comment-text">${escapeHtml(latestComment.comment || '')}</div>
+                        </div>
+                    ` : ''}
+                    <div class="ceo-bead-actions">
+                        <select id="ceo-dispatch-${escapeHtml(bead.id)}" aria-label="Select agent to dispatch bead ${escapeHtml(bead.id)}">
+                            <option value="">Select agent…</option>
+                            ${agentOptions}
+                        </select>
+                        <button type="button" class="secondary" onclick="dispatchBeadToAgent('${escapeHtml(bead.id)}')" ${isBusy(dispatchKey) ? 'disabled' : ''}>
+                            ${isBusy(dispatchKey) ? 'Dispatching…' : 'Dispatch'}
+                        </button>
+                        <button type="button" class="secondary" onclick="showAllBeadCommentsModal('${escapeHtml(bead.id)}')">
+                            View all comments
+                        </button>
+                        <button type="button" class="secondary" onclick="showBeadCommentModal('${escapeHtml(bead.id)}')" ${isBusy(commentKey) ? 'disabled' : ''}>
+                            ${isBusy(commentKey) ? 'Saving…' : 'Add comment'}
+                        </button>
+                        <button type="button" class="danger" onclick="closeBeadFromCeo('${escapeHtml(bead.id)}')" ${isBusy(closeKey) ? 'disabled' : ''}>
+                            ${isBusy(closeKey) ? 'Closing…' : 'Close'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        })
+        .join('');
 }
 
 function renderAgents() {
@@ -2251,13 +2421,32 @@ function viewBead(beadId) {
 
     const tags = Array.isArray(bead.tags) && bead.tags.length > 0 ? bead.tags.map((t) => `<span class="badge">${escapeHtml(String(t))}</span>`).join(' ') : '<em>none</em>';
     const assigned = bead.assigned_to ? escapeHtml(bead.assigned_to) : '<em>unassigned</em>';
+    const blockedBy = Array.isArray(bead.blocked_by) ? bead.blocked_by : [];
+    const blocks = Array.isArray(bead.blocks) ? bead.blocks : [];
+    const statusClass = getCondensedBeadStatusClass(bead);
     const body = `
-        <div>
+        <div class="bead-condensed ${statusClass}">
             <div style="margin-bottom: 0.5rem;"><span class="badge priority-${bead.priority}">P${bead.priority}</span> <span class="badge">${escapeHtml(bead.type)}</span> <span class="badge">${escapeHtml(bead.status)}</span></div>
             <div><strong>ID:</strong> ${escapeHtml(bead.id)}</div>
             <div><strong>Assigned to:</strong> ${assigned}</div>
             <div style="margin-top: 0.5rem;"><strong>Tags:</strong> ${tags}</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>Blocked by:</strong> ${blockedBy.length ? escapeHtml(blockedBy.join(', ')) : '<em>none</em>'}
+            </div>
+            <div style="margin-top: 0.25rem;">
+                <strong>Blocks:</strong> ${blocks.length ? escapeHtml(blocks.join(', ')) : '<em>none</em>'}
+            </div>
             <div style="margin-top: 1rem; white-space: pre-wrap;">${escapeHtml(bead.description || 'No description')}</div>
+            <div class="bead-status-legend">
+                <span class="bead-status-chip bead-status-open">Open</span>
+                <span class="bead-status-chip bead-status-in_progress">In Progress</span>
+                <span class="bead-status-chip bead-status-blocked">Blocked</span>
+                <span class="bead-status-chip bead-status-deferred">Deferred</span>
+                <span class="bead-status-chip bead-status-ready">Ready</span>
+                <span class="bead-status-chip bead-status-closed">Closed</span>
+                <span class="bead-status-chip bead-status-tombstone">Tombstone</span>
+                <span class="bead-status-chip bead-status-pinned">Pinned</span>
+            </div>
         </div>
     `;
 
@@ -2270,6 +2459,264 @@ function viewBead(beadId) {
             { label: 'Close', variant: 'secondary', onClick: () => closeAppModal() }
         ]
     });
+}
+
+async function dispatchBeadToAgent(beadId) {
+    const select = document.getElementById(`ceo-dispatch-${beadId}`);
+    const agentId = select ? select.value : '';
+    if (!agentId) {
+        showToast('Select an agent to dispatch.', 'error');
+        return;
+    }
+
+    const ok = await confirmModal({
+        title: 'Dispatch bead?',
+        body: `Assign bead ${beadId} to ${agentId}?`,
+        confirmText: 'Dispatch',
+        cancelText: 'Cancel'
+    });
+    if (!ok) return;
+
+    try {
+        setBusy(`dispatchBead:${beadId}`, true);
+        await saveBeadUpdate(beadId, { assigned_to: agentId, status: 'in_progress' }, { successMessage: 'Bead dispatched' });
+    } catch (error) {
+        // Error already handled
+    } finally {
+        setBusy(`dispatchBead:${beadId}`, false);
+    }
+}
+
+async function closeBeadFromCeo(beadId) {
+    const ok = await confirmModal({
+        title: 'Close bead?',
+        body: `Close bead ${beadId}? This will mark it as closed.`,
+        confirmText: 'Close bead',
+        cancelText: 'Cancel',
+        danger: true
+    });
+    if (!ok) return;
+
+    try {
+        setBusy(`closeBead:${beadId}`, true);
+        await saveBeadUpdate(beadId, { status: 'closed' }, { successMessage: 'Bead closed' });
+    } catch (error) {
+        // Error already handled
+    } finally {
+        setBusy(`closeBead:${beadId}`, false);
+    }
+}
+
+async function showBeadCommentModal(beadId) {
+    try {
+        const res = await formModal({
+            title: 'Add bead comment',
+            submitText: 'Add comment',
+            fields: [
+                { id: 'comment', label: 'Comment', type: 'textarea', required: true, placeholder: 'Add context or instructions for this bead.' }
+            ]
+        });
+        if (!res || !res.comment) return;
+
+        setBusy(`commentBead:${beadId}`, true);
+        const bead = await apiCall(`/beads/${beadId}`);
+        const context = bead.context || {};
+        const comments = parseBeadComments(context);
+
+        comments.push({
+            id: `comment-${Date.now()}`,
+            author: 'ceo',
+            timestamp: new Date().toISOString(),
+            comment: String(res.comment || '').trim()
+        });
+
+        context.comments = JSON.stringify(comments);
+        context.last_comment_by = 'ceo';
+        context.last_comment_at = new Date().toISOString();
+
+        await saveBeadUpdate(beadId, { context: context }, { successMessage: 'Comment added' });
+    } catch (error) {
+        // Error already handled
+    } finally {
+        setBusy(`commentBead:${beadId}`, false);
+    }
+}
+
+function showAllBeadCommentsModal(beadId) {
+    const bead = state.beads.find((b) => b.id === beadId);
+    if (!bead) return;
+
+    const comments = parseBeadComments(bead.context || {});
+    const bodyHtml = comments.length
+        ? `
+            <div class="ceo-comment-list">
+                ${comments
+                    .map((c) => {
+                        const author = escapeHtml(c.author || 'unknown');
+                        const timestamp = escapeHtml((c.timestamp || '').substring(0, 19).replace('T', ' '));
+                        const text = escapeHtml(c.comment || '');
+                        return `
+                            <div class="ceo-comment-item">
+                                <div class="small"><strong>${author}</strong> · ${timestamp}</div>
+                                <div class="ceo-comment-text">${text}</div>
+                            </div>
+                        `;
+                    })
+                    .join('')}
+            </div>
+        `
+        : '<p class="small">No comments yet.</p>';
+
+    openAppModal({
+        title: `Comments for ${bead.title}`,
+        bodyHtml: bodyHtml,
+        actions: [
+            { label: 'Close', variant: 'secondary', onClick: () => closeAppModal() }
+        ]
+    });
+}
+
+function openBeadDetails(beadId) {
+    const bead = state.beads.find((b) => b.id === beadId);
+    if (!bead) return;
+
+    const bodyHtml = renderBeadDetailsHtml(bead);
+    openAppModal({
+        title: `Bead details: ${bead.title}`,
+        bodyHtml,
+        actions: [
+            { label: 'Close', variant: 'secondary', onClick: () => closeAppModal() }
+        ]
+    });
+}
+
+function renderBeadDetailsHtml(bead) {
+    const tags = Array.isArray(bead.tags) ? bead.tags : [];
+    const blockedBy = Array.isArray(bead.blocked_by) ? bead.blocked_by : [];
+    const blocks = Array.isArray(bead.blocks) ? bead.blocks : [];
+    const relatedTo = Array.isArray(bead.related_to) ? bead.related_to : [];
+    const children = Array.isArray(bead.children) ? bead.children : [];
+    const context = bead.context ? JSON.stringify(bead.context, null, 2) : '';
+
+    return `
+        <div class="bead-details">
+            <div class="bead-details-actions">
+                <button type="button" class="icon-inline-button" onclick="openEditBeadModal('${escapeHtml(bead.id)}')" aria-label="Edit bead">✏️</button>
+            </div>
+            <div><strong>ID:</strong> ${escapeHtml(bead.id || '')}</div>
+            <div><strong>Title:</strong> ${escapeHtml(bead.title || '')}</div>
+            <div><strong>Type:</strong> ${escapeHtml(bead.type || '')}</div>
+            <div><strong>Status:</strong> ${escapeHtml(bead.status || '')}</div>
+            <div><strong>Priority:</strong> ${escapeHtml(String(bead.priority ?? ''))}</div>
+            <div><strong>Project:</strong> ${escapeHtml(bead.project_id || '')}</div>
+            <div><strong>Assigned to:</strong> ${escapeHtml(bead.assigned_to || '')}</div>
+            <div><strong>Parent:</strong> ${escapeHtml(bead.parent || '')}</div>
+            <div><strong>Tags:</strong> ${escapeHtml(tags.join(', '))}</div>
+            <div><strong>Blocked by:</strong> ${escapeHtml(blockedBy.join(', '))}</div>
+            <div><strong>Blocks:</strong> ${escapeHtml(blocks.join(', '))}</div>
+            <div><strong>Related to:</strong> ${escapeHtml(relatedTo.join(', '))}</div>
+            <div><strong>Children:</strong> ${escapeHtml(children.join(', '))}</div>
+            <div><strong>Created at:</strong> ${escapeHtml(String(bead.created_at || ''))}</div>
+            <div><strong>Updated at:</strong> ${escapeHtml(String(bead.updated_at || ''))}</div>
+            <div><strong>Closed at:</strong> ${escapeHtml(String(bead.closed_at || ''))}</div>
+            <div style="margin-top: 0.5rem;"><strong>Description:</strong></div>
+            <div style="white-space: pre-wrap;">${escapeHtml(bead.description || '')}</div>
+            <div style="margin-top: 0.5rem;"><strong>Context:</strong></div>
+            <pre class="small" style="white-space: pre-wrap;">${escapeHtml(context)}</pre>
+        </div>
+    `;
+}
+
+function getCondensedBeadStatusClass(bead) {
+    const status = String(bead.status || '').toLowerCase();
+    const blocks = Array.isArray(bead.blocks) ? bead.blocks : [];
+    const classes = [];
+    if (status) classes.push(`bead-status-${status}`);
+    if (blocks.length > 0) classes.push('bead-status-blocks');
+    return classes.join(' ');
+}
+
+async function openEditBeadModal(beadId) {
+    const bead = state.beads.find((b) => b.id === beadId);
+    if (!bead) return;
+
+    const tagsValue = Array.isArray(bead.tags) ? bead.tags.join(', ') : '';
+    const blockedByValue = Array.isArray(bead.blocked_by) ? bead.blocked_by.join(', ') : '';
+    const blocksValue = Array.isArray(bead.blocks) ? bead.blocks.join(', ') : '';
+    const relatedToValue = Array.isArray(bead.related_to) ? bead.related_to.join(', ') : '';
+    const childrenValue = Array.isArray(bead.children) ? bead.children.join(', ') : '';
+    const contextValue = bead.context ? JSON.stringify(bead.context, null, 2) : '';
+
+    const res = await formModal({
+        title: 'Edit bead',
+        submitText: 'Save',
+        cancelText: 'Cancel',
+        fields: [
+            { id: 'title', label: 'Title', type: 'text', required: true, value: bead.title || '' },
+            { id: 'type', label: 'Type', type: 'text', required: true, value: bead.type || '' },
+            { id: 'status', label: 'Status', type: 'select', required: true, value: bead.status || 'open', options: [
+                { value: 'open', label: 'open' },
+                { value: 'in_progress', label: 'in_progress' },
+                { value: 'blocked', label: 'blocked' },
+                { value: 'closed', label: 'closed' }
+            ]},
+            { id: 'priority', label: 'Priority', type: 'number', required: true, value: bead.priority ?? 2 },
+            { id: 'project_id', label: 'Project ID', type: 'text', required: true, value: bead.project_id || '' },
+            { id: 'assigned_to', label: 'Assigned to', type: 'text', required: false, value: bead.assigned_to || '' },
+            { id: 'parent', label: 'Parent', type: 'text', required: false, value: bead.parent || '' },
+            { id: 'tags', label: 'Tags', type: 'text', required: false, value: tagsValue, description: 'Comma-separated' },
+            { id: 'blocked_by', label: 'Blocked by', type: 'text', required: false, value: blockedByValue, description: 'Comma-separated bead IDs' },
+            { id: 'blocks', label: 'Blocks', type: 'text', required: false, value: blocksValue, description: 'Comma-separated bead IDs' },
+            { id: 'related_to', label: 'Related to', type: 'text', required: false, value: relatedToValue, description: 'Comma-separated bead IDs' },
+            { id: 'children', label: 'Children', type: 'text', required: false, value: childrenValue, description: 'Comma-separated bead IDs' },
+            { id: 'description', label: 'Description', type: 'textarea', required: false, value: bead.description || '' },
+            { id: 'context', label: 'Context (JSON)', type: 'textarea', required: false, value: contextValue }
+        ]
+    });
+    if (!res) return;
+
+    let parsedContext = {};
+    if ((res.context || '').trim()) {
+        try {
+            parsedContext = JSON.parse(res.context);
+        } catch (e) {
+            showToast('Context must be valid JSON.', 'error');
+            return;
+        }
+    }
+
+    const parseList = (value) => {
+        return String(value || '')
+            .split(',')
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0);
+    };
+
+    const payload = {
+        title: res.title,
+        type: res.type,
+        status: res.status,
+        priority: Number(res.priority),
+        project_id: res.project_id,
+        assigned_to: res.assigned_to || '',
+        parent: res.parent || '',
+        tags: parseList(res.tags),
+        blocked_by: parseList(res.blocked_by),
+        blocks: parseList(res.blocks),
+        related_to: parseList(res.related_to),
+        children: parseList(res.children),
+        description: res.description || '',
+        context: parsedContext
+    };
+
+    try {
+        setBusy(`editBead:${beadId}`, true);
+        await saveBeadUpdate(beadId, payload, { successMessage: 'Bead updated' });
+    } catch (error) {
+        // Error already handled
+    } finally {
+        setBusy(`editBead:${beadId}`, false);
+    }
 }
 
 async function redispatchBead(beadId) {

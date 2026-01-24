@@ -175,15 +175,45 @@ func (m *Manager) UpdateBead(id string, updates map[string]interface{}) error {
 			now := time.Now()
 			bead.ClosedAt = &now
 		}
+		if status != models.BeadStatusClosed {
+			bead.ClosedAt = nil
+		}
 	}
 	if priority, ok := updates["priority"].(models.BeadPriority); ok {
 		bead.Priority = priority
+	}
+	if title, ok := updates["title"].(string); ok {
+		bead.Title = title
+	}
+	if beadType, ok := updates["type"].(string); ok {
+		bead.Type = beadType
+	}
+	if projectID, ok := updates["project_id"].(string); ok {
+		bead.ProjectID = projectID
 	}
 	if assignedTo, ok := updates["assigned_to"].(string); ok {
 		bead.AssignedTo = assignedTo
 	}
 	if description, ok := updates["description"].(string); ok {
 		bead.Description = description
+	}
+	if parent, ok := updates["parent"].(string); ok {
+		bead.Parent = parent
+	}
+	if tags, ok := updates["tags"].([]string); ok {
+		bead.Tags = tags
+	}
+	if blockedBy, ok := updates["blocked_by"].([]string); ok {
+		bead.BlockedBy = blockedBy
+	}
+	if blocks, ok := updates["blocks"].([]string); ok {
+		bead.Blocks = blocks
+	}
+	if relatedTo, ok := updates["related_to"].([]string); ok {
+		bead.RelatedTo = relatedTo
+	}
+	if children, ok := updates["children"].([]string); ok {
+		bead.Children = children
 	}
 	if ctxUpdates, ok := updates["context"].(map[string]string); ok {
 		if bead.Context == nil {
@@ -415,6 +445,26 @@ func (m *Manager) matchesFilters(bead *models.Bead, filters map[string]interface
 	if beadType, ok := filters["type"].(string); ok {
 		if bead.Type != beadType {
 			return false
+		}
+	}
+
+	if assignedTo, ok := filters["assigned_to"]; ok {
+		switch value := assignedTo.(type) {
+		case string:
+			if bead.AssignedTo != value {
+				return false
+			}
+		case []string:
+			match := false
+			for _, candidate := range value {
+				if bead.AssignedTo == candidate {
+					match = true
+					break
+				}
+			}
+			if !match {
+				return false
+			}
 		}
 	}
 

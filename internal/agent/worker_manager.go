@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jordanhubbard/agenticorp/internal/actions"
 	"github.com/jordanhubbard/agenticorp/internal/provider"
 	"github.com/jordanhubbard/agenticorp/internal/temporal/eventbus"
 	"github.com/jordanhubbard/agenticorp/internal/worker"
@@ -21,6 +22,7 @@ type WorkerManager struct {
 	providerRegistry *provider.Registry
 	eventBus         *eventbus.EventBus
 	agentPersister   interface{ UpsertAgent(*models.Agent) error }
+	actionRouter     *actions.Router
 	mu               sync.RWMutex
 	maxAgents        int
 }
@@ -40,6 +42,12 @@ func (m *WorkerManager) SetAgentPersister(p interface{ UpsertAgent(*models.Agent
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.agentPersister = p
+}
+
+func (m *WorkerManager) SetActionRouter(r *actions.Router) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.actionRouter = r
 }
 
 func (m *WorkerManager) persistAgent(agent *models.Agent) {
@@ -316,6 +324,40 @@ func (m *WorkerManager) ExecuteTask(ctx context.Context, agentID string, task *w
 	result, err := m.workerPool.ExecuteTask(ctx, task, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("task execution failed: %w", err)
+	}
+
+	// Enforce strict JSON action output and route actions
+	if result != nil && task != nil {
+		router := m.actionRouter
+		if router != nil {
+			actx := actions.ActionContext{
+				AgentID:   agentID,
+				BeadID:    task.BeadID,
+				ProjectID: task.ProjectID,
+			}
+			env, parseErr := actions.DecodeStrict([]byte(result.Response))
+			if parseErr != nil {
+				actionResult := router.AutoFileParseFailure(ctx, actx, parseErr, result.Response)
+				result.Actions = []actions.Result{actionResult}
+				result.Success = false
+				result.Error = fmt.Sprintf("action parse failed: %v", parseErr)
+			} else {
+				actionsResult, execErr := router.Execute(ctx, env, actx)
+				result.Actions = actionsResult
+				if execErr != nil {
+					result.Success = false
+					result.Error = execErr.Error()
+				} else {
+					for _, ar := range actionsResult {
+						if ar.Status == "error" {
+							result.Success = false
+							result.Error = ar.Message
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// Update last active time

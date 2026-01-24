@@ -6,7 +6,7 @@ const LogViewer = {
     logs: [],
     filters: {
         level: 'all', // all, debug, info, warn, error
-        source: 'all', // all, temporal, agent, provider, dispatcher, database
+        source: 'all', // all, temporal, agent, provider, dispatcher, database, actions
         search: ''
     },
     autoScroll: true,
@@ -119,6 +119,7 @@ const LogViewer = {
                 <option value="provider">Providers</option>
                 <option value="dispatcher">Dispatcher</option>
                 <option value="database">Database</option>
+                <option value="actions">Actions</option>
             </select>
 
             <input 
@@ -149,13 +150,30 @@ const LogViewer = {
 
         return logs.map(log => {
             const levelClass = `log-${log.level || 'info'}`;
+            const source = log.source || 'system';
+            const sourceClass = source === 'actions' ? 'log-source-actions' : '';
             const timestamp = new Date(log.timestamp).toLocaleTimeString();
             
+            const actionType = log.metadata && log.metadata.action_type
+                ? `<span class="log-action-badge">${this.escapeHtml(String(log.metadata.action_type))}</span>`
+                : '';
+            const actionStatusValue = log.metadata && log.metadata.status
+                ? String(log.metadata.status)
+                : '';
+            const actionStatusClass = actionStatusValue
+                ? `log-action-status log-action-status-${this.escapeHtml(actionStatusValue.toLowerCase())}`
+                : '';
+            const actionStatus = actionStatusValue
+                ? `<span class="${actionStatusClass}">${this.escapeHtml(actionStatusValue)}</span>`
+                : '';
+
             return `
-                <div class="log-entry ${levelClass}">
+                <div class="log-entry ${levelClass} ${sourceClass}">
                     <span class="log-time">${timestamp}</span>
                     <span class="log-level">${log.level?.toUpperCase() || 'INFO'}</span>
-                    <span class="log-source">[${log.source || 'system'}]</span>
+                    <span class="log-source">[${source}]</span>
+                    ${actionType}
+                    ${actionStatus}
                     <span class="log-message">${this.escapeHtml(log.message)}</span>
                     ${log.metadata ? `<span class="log-metadata">${this.formatMetadata(log.metadata)}</span>` : ''}
                 </div>

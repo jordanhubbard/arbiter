@@ -17,6 +17,7 @@ func (s *Server) handleBeads(w http.ResponseWriter, r *http.Request) {
 		projectID := r.URL.Query().Get("project_id")
 		statusStr := r.URL.Query().Get("status")
 		beadType := r.URL.Query().Get("type")
+		assignedTo := r.URL.Query().Get("assigned_to")
 
 		filters := make(map[string]interface{})
 		if projectID != "" {
@@ -27,6 +28,23 @@ func (s *Server) handleBeads(w http.ResponseWriter, r *http.Request) {
 		}
 		if beadType != "" {
 			filters["type"] = beadType
+		}
+		if assignedTo != "" {
+			if strings.Contains(assignedTo, ",") {
+				parts := strings.Split(assignedTo, ",")
+				values := make([]string, 0, len(parts))
+				for _, part := range parts {
+					value := strings.TrimSpace(part)
+					if value != "" {
+						values = append(values, value)
+					}
+				}
+				if len(values) > 0 {
+					filters["assigned_to"] = values
+				}
+			} else {
+				filters["assigned_to"] = assignedTo
+			}
 		}
 
 		beads, err := s.agenticorp.GetBeadsManager().ListBeads(filters)
@@ -181,9 +199,19 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPatch:
 		var req struct {
-			Status      string            `json:"status"`
-			AssignedTo  string            `json:"assigned_to"`
-			Description string            `json:"description"`
+			Title       *string            `json:"title"`
+			Type        *string            `json:"type"`
+			Status      *string            `json:"status"`
+			Priority    *int               `json:"priority"`
+			ProjectID   *string            `json:"project_id"`
+			AssignedTo  *string            `json:"assigned_to"`
+			Description *string            `json:"description"`
+			Parent      *string            `json:"parent"`
+			Tags        *[]string          `json:"tags"`
+			BlockedBy   *[]string          `json:"blocked_by"`
+			Blocks      *[]string          `json:"blocks"`
+			RelatedTo   *[]string          `json:"related_to"`
+			Children    *[]string          `json:"children"`
 			Context     map[string]string `json:"context"`
 		}
 		if err := s.parseJSON(r, &req); err != nil {
@@ -192,14 +220,44 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 		}
 
 		updates := make(map[string]interface{})
-		if req.Status != "" {
-			updates["status"] = models.BeadStatus(req.Status)
+		if req.Title != nil {
+			updates["title"] = *req.Title
 		}
-		if req.AssignedTo != "" {
-			updates["assigned_to"] = req.AssignedTo
+		if req.Type != nil {
+			updates["type"] = *req.Type
 		}
-		if req.Description != "" {
-			updates["description"] = req.Description
+		if req.Status != nil {
+			updates["status"] = models.BeadStatus(*req.Status)
+		}
+		if req.Priority != nil {
+			updates["priority"] = models.BeadPriority(*req.Priority)
+		}
+		if req.ProjectID != nil {
+			updates["project_id"] = *req.ProjectID
+		}
+		if req.AssignedTo != nil {
+			updates["assigned_to"] = *req.AssignedTo
+		}
+		if req.Description != nil {
+			updates["description"] = *req.Description
+		}
+		if req.Parent != nil {
+			updates["parent"] = *req.Parent
+		}
+		if req.Tags != nil {
+			updates["tags"] = *req.Tags
+		}
+		if req.BlockedBy != nil {
+			updates["blocked_by"] = *req.BlockedBy
+		}
+		if req.Blocks != nil {
+			updates["blocks"] = *req.Blocks
+		}
+		if req.RelatedTo != nil {
+			updates["related_to"] = *req.RelatedTo
+		}
+		if req.Children != nil {
+			updates["children"] = *req.Children
 		}
 		if req.Context != nil {
 			updates["context"] = req.Context

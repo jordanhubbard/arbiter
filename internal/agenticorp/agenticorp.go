@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jordanhubbard/agenticorp/internal/actions"
 	"github.com/jordanhubbard/agenticorp/internal/agent"
 	"github.com/jordanhubbard/agenticorp/internal/beads"
 	"github.com/jordanhubbard/agenticorp/internal/database"
@@ -19,6 +20,7 @@ import (
 	"github.com/jordanhubbard/agenticorp/internal/dispatch"
 	"github.com/jordanhubbard/agenticorp/internal/executor"
 	"github.com/jordanhubbard/agenticorp/internal/gitops"
+	"github.com/jordanhubbard/agenticorp/internal/logging"
 	"github.com/jordanhubbard/agenticorp/internal/modelcatalog"
 	internalmodels "github.com/jordanhubbard/agenticorp/internal/models"
 	"github.com/jordanhubbard/agenticorp/internal/orgchart"
@@ -38,6 +40,7 @@ import (
 type AgentiCorp struct {
 	config           *config.Config
 	agentManager     *agent.WorkerManager
+	actionRouter     *actions.Router
 	projectManager   *project.Manager
 	personaManager   *persona.Manager
 	beadsManager     *beads.Manager
@@ -52,6 +55,7 @@ type AgentiCorp struct {
 	modelCatalog     *modelcatalog.Catalog
 	gitopsManager    *gitops.Manager
 	shellExecutor    *executor.ShellExecutor
+	logManager       *logging.Manager
 }
 
 // New creates a new AgentiCorp instance
@@ -128,6 +132,10 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 	if db != nil {
 		shellExec = executor.NewShellExecutor(db.DB())
 	}
+	var logMgr *logging.Manager
+	if db != nil {
+		logMgr = logging.NewManager(db.DB())
+	}
 
 	arb := &AgentiCorp{
 		config:           cfg,
@@ -145,7 +153,19 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 		modelCatalog:     modelCatalog,
 		gitopsManager:    gitopsMgr,
 		shellExecutor:    shellExec,
+		logManager:       logMgr,
 	}
+
+	actionRouter := &actions.Router{
+		Beads:     arb,
+		Escalator: arb,
+		Commands:  arb,
+		Logger:    arb,
+		BeadType:  "task",
+		DefaultP0: true,
+	}
+	arb.actionRouter = actionRouter
+	agentMgr.SetActionRouter(actionRouter)
 
 	arb.dispatcher = dispatch.NewDispatcher(arb.beadsManager, arb.projectManager, arb.agentManager, arb.providerRegistry, eb)
 
@@ -546,6 +566,29 @@ func (a *AgentiCorp) ExecuteShellCommand(ctx context.Context, req executor.Execu
 	return a.shellExecutor.ExecuteCommand(ctx, req)
 }
 
+// ExecuteCommand satisfies actions.CommandExecutor.
+func (a *AgentiCorp) ExecuteCommand(ctx context.Context, req executor.ExecuteCommandRequest) (*executor.ExecuteCommandResult, error) {
+	return a.ExecuteShellCommand(ctx, req)
+}
+
+func (a *AgentiCorp) LogAction(ctx context.Context, actx actions.ActionContext, action actions.Action, result actions.Result) {
+	if a.logManager == nil {
+		return
+	}
+	metadata := map[string]interface{}{
+		"agent_id":    actx.AgentID,
+		"bead_id":     actx.BeadID,
+		"project_id":  actx.ProjectID,
+		"action_type": action.Type,
+		"status":      result.Status,
+		"message":     result.Message,
+	}
+	for k, v := range result.Metadata {
+		metadata[k] = v
+	}
+	a.logManager.Log(logging.LogLevelInfo, "actions", "action executed", metadata)
+}
+
 // GetCommandLogs retrieves command logs with filters
 func (a *AgentiCorp) GetCommandLogs(filters map[string]interface{}, limit int) ([]*models.CommandLog, error) {
 	if a.shellExecutor == nil {
@@ -569,6 +612,10 @@ func (a *AgentiCorp) GetAgentManager() *agent.WorkerManager {
 
 func (a *AgentiCorp) GetProviderRegistry() *provider.Registry {
 	return a.providerRegistry
+}
+
+func (a *AgentiCorp) GetActionRouter() *actions.Router {
+	return a.actionRouter
 }
 
 func (a *AgentiCorp) GetDispatcher() *dispatch.Dispatcher {
@@ -1275,13 +1322,32 @@ func (a *AgentiCorp) RunReplQuery(ctx context.Context, message string) (*ReplRes
 		return nil, err
 	}
 
+	// Enforce strict JSON action output and execute actions
+	var actionResults []actions.Result
+	if a.actionRouter != nil {
+		actx := actions.ActionContext{
+			AgentID:   "ceo",
+			BeadID:    beadID,
+			ProjectID: "agenticorp-self",
+		}
+		env, parseErr := actions.DecodeStrict([]byte(result.Response))
+		if parseErr != nil {
+			actionResult := a.actionRouter.AutoFileParseFailure(ctx, actx, parseErr, result.Response)
+			actionResults = []actions.Result{actionResult}
+		} else {
+			actionResults, _ = a.actionRouter.Execute(ctx, env, actx)
+		}
+	}
+
 	// Update bead with response
 	if beadID != "" {
+		actionsJSON, _ := json.Marshal(actionResults)
 		_ = a.beadsManager.UpdateBead(beadID, map[string]interface{}{
 			"context": map[string]string{
 				"source": "ceo-repl",
 				"created_by": "ceo",
 				"response": result.Response,
+				"actions": string(actionsJSON),
 				"provider_id": providerRecord.ID,
 				"model": result.Model,
 				"tokens_used": fmt.Sprintf("%d", result.TokensUsed),
@@ -1398,20 +1464,21 @@ func providerIsHealthy(status string) bool {
 func (a *AgentiCorp) buildAgentiCorpPersonaPrompt() string {
 	persona, err := a.personaManager.LoadPersona("agenticorp")
 	if err != nil {
-		return "You are AgentiCorp, the orchestration system. Respond to the CEO with clear guidance and actionable next steps."
+		return fmt.Sprintf("You are AgentiCorp, the orchestration system. Respond to the CEO with clear guidance and actionable next steps.\n\n%s", actions.ActionPrompt)
 	}
 
 	focus := strings.Join(persona.FocusAreas, ", ")
 	standards := strings.Join(persona.Standards, "; ")
 
 	return fmt.Sprintf(
-		"You are AgentiCorp, the orchestration system. Treat this as a high-priority CEO request.\n\nMission: %s\nCharacter: %s\nTone: %s\nFocus Areas: %s\nDecision Making: %s\nStandards: %s",
+		"You are AgentiCorp, the orchestration system. Treat this as a high-priority CEO request.\n\nMission: %s\nCharacter: %s\nTone: %s\nFocus Areas: %s\nDecision Making: %s\nStandards: %s\n\n%s",
 		strings.TrimSpace(persona.Mission),
 		strings.TrimSpace(persona.Character),
 		strings.TrimSpace(persona.Tone),
 		strings.TrimSpace(focus),
 		strings.TrimSpace(persona.DecisionMaking),
 		strings.TrimSpace(standards),
+		actions.ActionPrompt,
 	)
 }
 
