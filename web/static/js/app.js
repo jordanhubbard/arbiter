@@ -1807,12 +1807,12 @@ async function sendReplQuery() {
         responseEl.textContent = '';
         responseEl.classList.add('streaming');
 
-        // Get active provider for the request
-        const activeProviders = (state.providers || []).filter(p => p.status === 'active');
-        if (activeProviders.length === 0) {
+        // Get healthy provider for the request
+        const healthyProviders = (state.providers || []).filter(p => p.status === 'healthy' || p.status === 'active');
+        if (healthyProviders.length === 0) {
             throw new Error('No active providers available');
         }
-        const providerId = activeProviders[0].id;
+        const providerId = healthyProviders[0].id;
 
         const requestBody = {
             provider_id: providerId,
