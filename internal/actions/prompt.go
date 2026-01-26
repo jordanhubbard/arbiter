@@ -7,7 +7,7 @@ The response must be a single JSON object with this shape:
 {
   "actions": [
     {
-      "type": "ask_followup|read_code|read_file|read_tree|search_text|write_file|edit_code|apply_patch|git_status|git_diff|run_command|create_bead|escalate_ceo",
+      "type": "ask_followup|read_code|read_file|read_tree|search_text|write_file|edit_code|apply_patch|git_status|git_diff|run_command|create_bead|close_bead|escalate_ceo",
       "question": "string",
       "path": "string",
       "content": "string",
@@ -43,6 +43,7 @@ The response must be a single JSON object with this shape:
 - git_status/git_diff: Check git state
 - run_command: Execute shell command. Requires: command
 - create_bead: Create work item. Requires: bead object
+- close_bead: Close/complete a bead. Requires: bead_id, optional: reason
 - escalate_ceo: Escalate decision. Requires: bead_id, reason
 - ask_followup: Ask clarifying question. Requires: question
 

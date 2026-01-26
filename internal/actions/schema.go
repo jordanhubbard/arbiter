@@ -15,6 +15,7 @@ const (
 	ActionWriteFile   = "write_file"
 	ActionRunCommand  = "run_command"
 	ActionCreateBead  = "create_bead"
+	ActionCloseBead   = "close_bead"
 	ActionEscalateCEO = "escalate_ceo"
 	ActionReadFile    = "read_file"
 	ActionReadTree    = "read_tree"
@@ -221,6 +222,10 @@ func validateAction(action Action) error {
 		}
 		if action.Bead.Title == "" || action.Bead.ProjectID == "" {
 			return errors.New("create_bead requires bead.title and bead.project_id")
+		}
+	case ActionCloseBead:
+		if action.BeadID == "" {
+			return errors.New("close_bead requires bead_id")
 		}
 	case ActionEscalateCEO:
 		if action.BeadID == "" {

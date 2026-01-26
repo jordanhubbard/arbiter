@@ -13,6 +13,10 @@ type BeadCreator interface {
 	CreateBead(title, description string, priority models.BeadPriority, beadType, projectID string) (*models.Bead, error)
 }
 
+type BeadCloser interface {
+	CloseBead(beadID, reason string) error
+}
+
 type BeadEscalator interface {
 	EscalateBeadToCEO(beadID, reason, returnedTo string) (*models.DecisionBead, error)
 }
@@ -53,6 +57,7 @@ type Result struct {
 
 type Router struct {
 	Beads     BeadCreator
+	Closer    BeadCloser
 	Escalator BeadEscalator
 	Commands  CommandExecutor
 	Files     FileManager
@@ -314,6 +319,20 @@ func (r *Router) executeAction(ctx context.Context, action Action, actx ActionCo
 			Status:     "executed",
 			Message:    "bead created",
 			Metadata:   map[string]interface{}{"bead_id": bead.ID},
+		}
+	case ActionCloseBead:
+		if r.Closer == nil {
+			return Result{ActionType: action.Type, Status: "error", Message: "bead closer not configured"}
+		}
+		err := r.Closer.CloseBead(action.BeadID, action.Reason)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: err.Error()}
+		}
+		return Result{
+			ActionType: action.Type,
+			Status:     "executed",
+			Message:    "bead closed",
+			Metadata:   map[string]interface{}{"bead_id": action.BeadID},
 		}
 	case ActionEscalateCEO:
 		if r.Escalator == nil {

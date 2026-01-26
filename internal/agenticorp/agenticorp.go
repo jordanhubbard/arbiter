@@ -169,6 +169,7 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 
 	actionRouter := &actions.Router{
 		Beads:     arb,
+		Closer:    arb,
 		Escalator: arb,
 		Commands:  arb,
 		Files:     files.NewManager(gitopsMgr),
@@ -1721,6 +1722,39 @@ func (a *AgentiCorp) CreateBead(title, description string, priority models.BeadP
 	}
 
 	return bead, nil
+}
+
+// CloseBead closes a bead with an optional reason
+func (a *AgentiCorp) CloseBead(beadID, reason string) error {
+	bead, err := a.beadsManager.GetBead(beadID)
+	if err != nil {
+		return fmt.Errorf("bead not found: %w", err)
+	}
+
+	updates := map[string]interface{}{
+		"status": models.BeadStatusClosed,
+	}
+	if reason != "" {
+		ctx := bead.Context
+		if ctx == nil {
+			ctx = make(map[string]string)
+		}
+		ctx["close_reason"] = reason
+		updates["context"] = ctx
+	}
+
+	if err := a.beadsManager.UpdateBead(beadID, updates); err != nil {
+		return fmt.Errorf("failed to close bead: %w", err)
+	}
+
+	if a.eventBus != nil {
+		_ = a.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, beadID, bead.ProjectID, map[string]interface{}{
+			"status": string(models.BeadStatusClosed),
+			"reason": reason,
+		})
+	}
+
+	return nil
 }
 
 // CreateDecisionBead creates a decision bead when an agent needs a decision
