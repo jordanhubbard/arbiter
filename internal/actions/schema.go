@@ -118,9 +118,12 @@ func stripCodeFences(payload []byte) []byte {
 	return []byte(strings.Join(lines[start:end], "\n"))
 }
 
-// stripThinkTags removes <think>...</think> blocks from model output
+// stripThinkTags removes <think>...</think> blocks and handles cases where
+// models output </think> without opening tag (everything before it is thinking)
 func stripThinkTags(payload []byte) []byte {
 	s := string(payload)
+	
+	// First, handle paired <think>...</think> blocks
 	for {
 		start := strings.Index(s, "<think>")
 		if start == -1 {
@@ -135,6 +138,13 @@ func stripThinkTags(payload []byte) []byte {
 		// Remove the entire <think>...</think> block
 		s = s[:start] + s[start+end+len("</think>"):]
 	}
+	
+	// Handle case where model outputs </think> without opening tag
+	// (common with some reasoning models - everything before </think> is reasoning)
+	if closeIdx := strings.Index(s, "</think>"); closeIdx != -1 {
+		s = s[closeIdx+len("</think>"):]
+	}
+	
 	return []byte(strings.TrimSpace(s))
 }
 
