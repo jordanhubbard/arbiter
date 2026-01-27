@@ -394,35 +394,70 @@ Let me investigate:
 I recommend <approval/rejection> because <reasoning>.
 ```
 
-## CEO Approval Process
+## CEO Approval Process (Manual)
 
-### CEO Reviews Proposal
+### Step 1: CEO Receives Approval Bead
+
+CEO sees a new decision bead in the UI:
+- Title: `[CEO] Code Fix Approval: <Description>`
+- Type: decision
+- Priority: P0
+- Contains full root cause analysis, proposed fix, and risk assessment
+
+### Step 2: CEO Reviews Proposal
 
 CEO examines:
-1. Root cause analysis - is it correct?
-2. Proposed fix - is it the right approach?
-3. Risk assessment - acceptable?
-4. Testing strategy - sufficient?
+1. **Root cause analysis** - Is the diagnosis correct?
+2. **Proposed fix** - Is this the right approach?
+3. **Risk assessment** - Are the risks acceptable?
+4. **Testing strategy** - Is verification sufficient?
+5. **Code changes** - Review the actual patch/diff
 
-### CEO Actions
+### Step 3: CEO Makes Decision
 
-**Approve:**
-```
-Approved. Proceed with applying the fix.
-```
-Agent proceeds to apply patch.
+**Option A: Approve and Apply (Recommended)**
 
-**Reject:**
-```
-Rejected. <Reason>
-```
-Agent closes proposal and returns to investigation.
+1. Close the approval bead via UI or API
+2. Create a new task bead asking the agent to apply the fix:
+   ```
+   Title: [apply-fix] Apply approved patch from dc-xxx
+   Description:
+   Apply the approved code fix from decision bead dc-xxx.
 
-**Request Changes:**
-```
-Needs revision: <Specific feedback>
-```
-Agent revises proposal and resubmits.
+   Instructions:
+   1. Read the approved patch from dc-xxx
+   2. Apply using write_file or apply_patch action
+   3. Verify the fix works
+   4. Update cache versions if needed
+   5. Close original bug bead <bug-id>
+   ```
+3. Assign to the agent who created the proposal
+4. Dispatcher will assign and execute
+
+**Option B: Approve and Apply Manually**
+
+1. CEO applies the patch themselves
+2. Close both the approval bead and original bug bead
+3. Add comments documenting the fix
+
+**Option C: Reject**
+
+1. Close the approval bead with reason: "Rejected: <explanation>"
+2. Add comment explaining why and what needs to change
+3. Agent can revise and resubmit, or mark bug as "needs-investigation"
+
+**Option D: Request Changes**
+
+1. Add comment to approval bead: "Needs revision: <specific feedback>"
+2. Leave bead open for agent to revise
+3. Agent updates proposal and notifies CEO
+
+### Automating Approvals (Future Enhancement)
+
+For low-risk fixes (e.g., typo fixes, obvious bugs), CEO could:
+- Set up auto-approval rules based on risk level
+- Delegate approval authority to Engineering Manager for specific fix types
+- Implement post-fix review instead of pre-approval for certain categories
 
 ## Hot-Reload Integration (Future)
 
