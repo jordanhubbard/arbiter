@@ -73,6 +73,8 @@ class DiagramManager {
         // Node click handler
         this.cy.on('tap', 'node', (evt) => {
             const node = evt.target;
+            this.cy.elements().unselect();
+            node.select();
             const data = node.data();
             this.showNodeDetails(data);
         });
@@ -126,8 +128,11 @@ class DiagramManager {
      * Export diagram as SVG
      */
     exportSVG() {
-        if (!this.cy) {
-            console.error('[Diagrams] No diagram to export');
+        if (!this.cy || typeof this.cy.svg !== 'function') {
+            console.error('[Diagrams] SVG export not available (cytoscape-svg not loaded)');
+            if (typeof showToast === 'function') {
+                showToast('SVG export unavailable (cytoscape-svg not loaded)', 'error');
+            }
             return;
         }
 
@@ -254,7 +259,8 @@ class ProjectHierarchyDiagram extends DiagramManager {
                     data: {
                         source: `project-${agent.project_id}`,
                         target: `agent-${agent.id}`
-                    }
+                    },
+                    classes: 'hierarchy'
                 });
             }
         }
@@ -278,7 +284,8 @@ class ProjectHierarchyDiagram extends DiagramManager {
                     data: {
                         source: `agent-${bead.assigned_to}`,
                         target: `bead-${bead.id}`
-                    }
+                    },
+                    classes: 'hierarchy'
                 });
             } else if (bead.project_id) {
                 // Connect orphan beads to their project
@@ -286,7 +293,8 @@ class ProjectHierarchyDiagram extends DiagramManager {
                     data: {
                         source: `project-${bead.project_id}`,
                         target: `bead-${bead.id}`
-                    }
+                    },
+                    classes: 'hierarchy'
                 });
             }
 
@@ -442,6 +450,13 @@ class ProjectHierarchyDiagram extends DiagramManager {
                     'curve-style': 'bezier'
                 }
             },
+            {
+                selector: 'edge.hierarchy',
+                style: {
+                    'line-color': '#94a3b8',
+                    'target-arrow-color': '#94a3b8'
+                }
+            },
             // Dependency edges
             {
                 selector: 'edge.dependency',
@@ -461,6 +476,59 @@ class ProjectHierarchyDiagram extends DiagramManager {
                 }
             }
         ];
+    }
+
+    collectHierarchySubtree(rootNode) {
+        if (!this.cy) {
+            return null;
+        }
+
+        let elements = this.cy.collection();
+        const queue = [rootNode];
+        const visited = new Set([rootNode.id()]);
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            const edges = current.outgoers('edge.hierarchy');
+            if (edges.length === 0) {
+                continue;
+            }
+
+            elements = elements.union(edges);
+            const targets = edges.targets();
+            targets.forEach((target) => {
+                if (!visited.has(target.id())) {
+                    visited.add(target.id());
+                    elements = elements.union(target);
+                    queue.push(target);
+                }
+            });
+        }
+
+        return elements;
+    }
+
+    toggleNodeExpansion(node) {
+        if (!this.cy) return;
+
+        const type = node.data('type');
+        if (type !== 'project' && type !== 'agent') {
+            return;
+        }
+
+        const isCollapsed = node.data('collapsed') === true;
+        const descendants = this.collectHierarchySubtree(node);
+        if (!descendants || descendants.length === 0) {
+            return;
+        }
+
+        if (isCollapsed) {
+            node.data('collapsed', false);
+            descendants.show();
+        } else {
+            node.data('collapsed', true);
+            descendants.hide();
+        }
     }
 
     showNodeDetails(data) {
@@ -937,6 +1005,11 @@ function initDiagramsUI() {
     if (typeof cytoscape !== 'undefined' && typeof cytoscapeDagre !== 'undefined') {
         cytoscape.use(cytoscapeDagre);
         console.log('[Diagrams] Cytoscape dagre extension registered');
+    }
+
+    if (typeof cytoscape !== 'undefined' && typeof cytoscapeSvg !== 'undefined') {
+        cytoscape.use(cytoscapeSvg);
+        console.log('[Diagrams] Cytoscape svg extension registered');
     }
 
     // Diagram type selector
