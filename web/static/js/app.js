@@ -3766,7 +3766,8 @@ async function loadMotivations() {
             populateMotivationRoleFilter();
         }
         if (historyRes.ok) {
-            motivationsState.history = await historyRes.json();
+            const historyData = await historyRes.json();
+            motivationsState.history = historyData.history || [];
         }
         if (idleRes.ok) {
             motivationsState.idleState = await idleRes.json();
