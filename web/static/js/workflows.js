@@ -38,6 +38,8 @@ function switchTab(tabName) {
         loadWorkflows();
     } else if (tabName === 'executions') {
         loadExecutions();
+    } else if (tabName === 'analytics') {
+        loadAnalytics();
     } else if (tabName === 'history') {
         loadHistory();
     }
@@ -206,6 +208,55 @@ function generateMermaidDiagram(workflow) {
     return graph;
 }
 
+function generateMermaidDiagramWithHighlight(workflow, currentNodeKey) {
+    if (!workflow.nodes || !workflow.edges) {
+        return 'graph TD\n    A[No workflow data]';
+    }
+
+    let graph = 'graph TD\n';
+
+    // Add start node
+    graph += '    START([Start])\n';
+
+    // Add all nodes
+    workflow.nodes.forEach(node => {
+        const shape = getNodeShape(node.node_type);
+        const label = `${node.node_key}\\n[${node.node_type}]`;
+        graph += `    ${node.node_key}${shape[0]}${label}${shape[1]}\n`;
+    });
+
+    // Add end node
+    graph += '    END([End])\n';
+
+    // Add edges
+    workflow.edges.forEach(edge => {
+        const from = edge.from_node_key || 'START';
+        const to = edge.to_node_key || 'END';
+        const condition = edge.condition || 'success';
+        graph += `    ${from} -->|${condition}| ${to}\n`;
+    });
+
+    // Add styling
+    graph += '    classDef taskNode fill:#e3f2fd,stroke:#1565c0,stroke-width:2px\n';
+    graph += '    classDef approvalNode fill:#fff3e0,stroke:#ef6c00,stroke-width:2px\n';
+    graph += '    classDef commitNode fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px\n';
+    graph += '    classDef currentNode fill:#ffeb3b,stroke:#f57c00,stroke-width:4px\n';
+
+    workflow.nodes.forEach(node => {
+        if (node.node_key === currentNodeKey) {
+            graph += `    class ${node.node_key} currentNode\n`;
+        } else if (node.node_type === 'task') {
+            graph += `    class ${node.node_key} taskNode\n`;
+        } else if (node.node_type === 'approval') {
+            graph += `    class ${node.node_key} approvalNode\n`;
+        } else if (node.node_type === 'commit') {
+            graph += `    class ${node.node_key} commitNode\n`;
+        }
+    });
+
+    return graph;
+}
+
 function getNodeShape(nodeType) {
     switch (nodeType) {
         case 'approval':
@@ -328,6 +379,7 @@ function renderBeadWorkflow(data) {
     const result = document.getElementById('bead-workflow-result');
 
     const statusClass = data.execution.status || 'active';
+    const mermaidGraph = generateMermaidDiagramWithHighlight(data.workflow, data.execution.current_node_key);
 
     let html = `
         <div class="execution-card">
@@ -340,6 +392,11 @@ function renderBeadWorkflow(data) {
                 <p><strong>Cycle Count:</strong> ${data.execution.cycle_count}</p>
                 <p><strong>Node Attempts:</strong> ${data.execution.node_attempt_count}</p>
                 <p><strong>Started:</strong> ${new Date(data.execution.started_at).toLocaleString()}</p>
+            </div>
+
+            <div class="workflow-diagram" style="margin-top:20px;">
+                <h4>Workflow Progress</h4>
+                <div class="mermaid" id="execution-mermaid">${mermaidGraph}</div>
             </div>
 
             ${data.current_node ? `
@@ -369,6 +426,135 @@ function renderBeadWorkflow(data) {
     `;
 
     result.innerHTML = html;
+
+    // Render Mermaid diagram
+    setTimeout(() => {
+        mermaid.run({
+            querySelector: '#execution-mermaid'
+        });
+    }, 100);
+}
+
+// Load analytics
+async function loadAnalytics() {
+    const loading = document.getElementById('analytics-loading');
+    const error = document.getElementById('analytics-error');
+    const content = document.getElementById('analytics-content');
+
+    loading.style.display = 'block';
+    error.style.display = 'none';
+    content.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/v1/workflows/analytics');
+        if (!response.ok) throw new Error('Failed to load analytics');
+
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        renderAnalytics(data);
+
+    } catch (err) {
+        loading.style.display = 'none';
+        error.textContent = 'Error loading analytics: ' + err.message;
+        error.style.display = 'block';
+    }
+}
+
+function renderAnalytics(data) {
+    const content = document.getElementById('analytics-content');
+
+    const statusActive = data.status_counts.active || 0;
+    const statusCompleted = data.status_counts.completed || 0;
+    const statusEscalated = data.status_counts.escalated || 0;
+    const statusFailed = data.status_counts.failed || 0;
+
+    const typeBug = data.type_counts.bug || 0;
+    const typeFeature = data.type_counts.feature || 0;
+    const typeUI = data.type_counts.ui || 0;
+
+    content.innerHTML = `
+        <div class="workflow-detail">
+            <h2>Workflow Analytics Dashboard</h2>
+
+            <div class="analytics-grid">
+                <div class="metric-card">
+                    <h3>Total Executions</h3>
+                    <div class="metric-value">${data.total_executions || 0}</div>
+                    <div class="status-breakdown">
+                        <span class="status-badge execution-status active">${statusActive} active</span>
+                        <span class="status-badge execution-status completed">${statusCompleted} completed</span>
+                        <span class="status-badge execution-status escalated">${statusEscalated} escalated</span>
+                        ${statusFailed > 0 ? `<span class="status-badge execution-status failed">${statusFailed} failed</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Escalation Rate</h3>
+                    <div class="metric-value">${data.escalation_rate.toFixed(1)}%</div>
+                    <div class="metric-label">${data.escalated_count} of ${data.total_executions} escalated</div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Average Cycles</h3>
+                    <div class="metric-value">${data.average_cycles.toFixed(2)}</div>
+                    <div class="metric-label">Max: ${data.max_cycles} cycles</div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Workflow Types</h3>
+                    <div class="status-breakdown" style="margin-top: 15px;">
+                        <span class="status-badge workflow-type bug">${typeBug} bug</span>
+                        <span class="status-badge workflow-type feature">${typeFeature} feature</span>
+                        <span class="status-badge workflow-type ui">${typeUI} ui</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-executions">
+                <h3>Recent Workflow Executions</h3>
+                ${data.recent_executions && data.recent_executions.length > 0 ? `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Bead ID</th>
+                                <th>Workflow</th>
+                                <th>Current Node</th>
+                                <th>Status</th>
+                                <th>Cycles</th>
+                                <th>Started</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.recent_executions.map(exec => `
+                                <tr onclick="viewExecution('${exec.bead_id}')" style="cursor: pointer;">
+                                    <td><strong>${exec.bead_id}</strong></td>
+                                    <td>${exec.workflow_name}</td>
+                                    <td>${exec.current_node_key || '(start)'}</td>
+                                    <td><span class="execution-status ${exec.status}">${exec.status}</span></td>
+                                    <td>${exec.cycle_count}</td>
+                                    <td>${new Date(exec.started_at).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : '<p>No recent executions</p>'}
+            </div>
+        </div>
+    `;
+}
+
+function viewExecution(beadId) {
+    // Switch to executions tab and load this bead
+    switchTab('executions');
+    setTimeout(() => {
+        const input = document.getElementById('bead-id-input');
+        if (input) {
+            input.value = beadId;
+            loadBeadWorkflow();
+        }
+    }, 100);
 }
 
 // Load history
@@ -391,5 +577,71 @@ async function loadHistory() {
     }, 500);
 }
 
+// Real-time updates via SSE
+let eventSource = null;
+
+function connectToEventStream() {
+    if (eventSource) {
+        eventSource.close();
+    }
+
+    eventSource = new EventSource('/api/v1/events/stream');
+
+    eventSource.addEventListener('bead.status_change', (e) => {
+        const data = JSON.parse(e.data);
+        console.log('[Workflow] Bead status changed:', data);
+
+        // Refresh execution view if we're viewing this bead
+        const beadIdInput = document.getElementById('bead-id-input');
+        if (beadIdInput && beadIdInput.value === data.bead_id) {
+            loadBeadWorkflow();
+        }
+    });
+
+    eventSource.addEventListener('workflow.advanced', (e) => {
+        const data = JSON.parse(e.data);
+        console.log('[Workflow] Workflow advanced:', data);
+
+        // Refresh execution view if we're viewing this bead
+        const beadIdInput = document.getElementById('bead-id-input');
+        if (beadIdInput && beadIdInput.value === data.bead_id) {
+            loadBeadWorkflow();
+        }
+    });
+
+    eventSource.onerror = (error) => {
+        console.error('[Workflow] EventSource error:', error);
+        // Reconnect after 5 seconds
+        setTimeout(connectToEventStream, 5000);
+    };
+}
+
+// Auto-refresh for active execution view
+let autoRefreshInterval = null;
+
+function startAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+
+    // Refresh every 5 seconds if viewing an execution
+    autoRefreshInterval = setInterval(() => {
+        const beadIdInput = document.getElementById('bead-id-input');
+        const result = document.getElementById('bead-workflow-result');
+        if (beadIdInput && beadIdInput.value && result.innerHTML) {
+            loadBeadWorkflow();
+        }
+    }, 5000);
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
 // Initialize on page load
 loadWorkflows();
+connectToEventStream();
+startAutoRefresh();
