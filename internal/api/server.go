@@ -258,6 +258,12 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("/api/v1/motivations/roles", s.handleMotivationRoles)
 	mux.HandleFunc("/api/v1/motivations/defaults", s.handleMotivationDefaults)
 
+	// Workflows (Phase 4)
+	mux.HandleFunc("/api/v1/workflows", s.handleWorkflows)
+	mux.HandleFunc("/api/v1/workflows/", s.handleWorkflow)
+	mux.HandleFunc("/api/v1/workflows/executions", s.handleWorkflowExecutions)
+	mux.HandleFunc("/api/v1/beads/workflow", s.handleBeadWorkflow)
+
 	// Webhooks (external event integration)
 	mux.HandleFunc("/api/v1/webhooks/github", s.handleGitHubWebhook)
 	mux.HandleFunc("/api/v1/webhooks/status", s.handleWebhookStatus)

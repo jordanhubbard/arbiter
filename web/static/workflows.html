@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow System - AgentiCorp</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        .workflow-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .workflow-header {
+            margin-bottom: 30px;
+        }
+
+        .workflow-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .workflow-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .workflow-tab.active {
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+
+        .workflow-tab:hover {
+            color: #2196F3;
+            background-color: #f5f5f5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .workflow-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .workflow-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .workflow-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .workflow-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .workflow-card .workflow-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .workflow-type.bug { background: #ffebee; color: #c62828; }
+        .workflow-type.feature { background: #e8f5e9; color: #2e7d32; }
+        .workflow-type.ui { background: #e3f2fd; color: #1565c0; }
+
+        .workflow-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .workflow-detail {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background: #e0e0e0;
+        }
+
+        .workflow-diagram {
+            margin: 30px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .node-list, .edge-list {
+            margin: 20px 0;
+        }
+
+        .node-item, .edge-item {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .node-item h4, .edge-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .node-meta, .edge-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .meta-label {
+            font-weight: 600;
+        }
+
+        .execution-list {
+            margin-top: 20px;
+        }
+
+        .execution-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .execution-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .execution-status.active { background: #e3f2fd; color: #1565c0; }
+        .execution-status.completed { background: #e8f5e9; color: #2e7d32; }
+        .execution-status.escalated { background: #fff3e0; color: #ef6c00; }
+        .execution-status.failed { background: #ffebee; color: #c62828; }
+
+        .history-timeline {
+            margin-top: 20px;
+            padding-left: 20px;
+            border-left: 2px solid #e0e0e0;
+        }
+
+        .history-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .history-item:before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #2196F3;
+        }
+
+        .history-timestamp {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="workflow-container">
+        <div class="workflow-header">
+            <h1>Workflow System</h1>
+            <p>Multi-agent workflow orchestration and execution tracking</p>
+        </div>
+
+        <div class="workflow-tabs">
+            <button class="workflow-tab active" data-tab="workflows">Workflows</button>
+            <button class="workflow-tab" data-tab="executions">Active Executions</button>
+            <button class="workflow-tab" data-tab="history">History</button>
+        </div>
+
+        <!-- Workflows Tab -->
+        <div id="workflows-tab" class="tab-content active">
+            <div class="loading" id="workflows-loading">Loading workflows...</div>
+            <div class="error" id="workflows-error" style="display:none;"></div>
+            <div class="workflow-list" id="workflow-list"></div>
+            <div id="workflow-detail" style="display:none;"></div>
+        </div>
+
+        <!-- Executions Tab -->
+        <div id="executions-tab" class="tab-content">
+            <div class="loading" id="executions-loading">Loading active executions...</div>
+            <div class="error" id="executions-error" style="display:none;"></div>
+            <div class="execution-list" id="execution-list"></div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content">
+            <div class="loading" id="history-loading">Loading history...</div>
+            <div class="error" id="history-error" style="display:none;"></div>
+            <div id="history-content"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/workflows.js"></script>
+</body>
+</html>

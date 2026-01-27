@@ -144,6 +144,19 @@ func (d *Database) ListWorkflows(workflowType, projectID string) ([]*workflow.Wo
 		if projID.Valid {
 			wf.ProjectID = projID.String
 		}
+
+		// Load nodes for this workflow
+		nodes, err := d.ListWorkflowNodes(wf.ID)
+		if err == nil {
+			wf.Nodes = nodes
+		}
+
+		// Load edges for this workflow
+		edges, err := d.ListWorkflowEdges(wf.ID)
+		if err == nil {
+			wf.Edges = edges
+		}
+
 		workflows = append(workflows, wf)
 	}
 
