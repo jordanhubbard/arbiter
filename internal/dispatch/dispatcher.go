@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,7 @@ type Dispatcher struct {
 	providers      *provider.Registry
 	eventBus       *eventbus.EventBus
 	personaMatcher *PersonaMatcher
+	autoBugRouter  *AutoBugRouter
 
 	mu     sync.RWMutex
 	status SystemStatus
@@ -62,6 +64,7 @@ func NewDispatcher(beadsMgr *beads.Manager, projMgr *project.Manager, agentMgr *
 		providers:      registry,
 		eventBus:       eb,
 		personaMatcher: NewPersonaMatcher(),
+		autoBugRouter:  NewAutoBugRouter(),
 		status: SystemStatus{
 			State:     StatusParked,
 			Reason:    "not started",
@@ -139,10 +142,30 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 			skippedReasons["nil_bead"]++
 			continue
 		}
-		if b.Priority == models.BeadPriorityP0 {
+
+		// Check if this is an auto-filed bug that needs routing
+		if routeInfo := d.autoBugRouter.AnalyzeBugForRouting(b); routeInfo.ShouldRoute {
+			log.Printf("[Dispatcher] Auto-bug detected: %s - routing to %s (%s)", b.ID, routeInfo.PersonaHint, routeInfo.RoutingReason)
+
+			// Update the bead with persona hint in title
+			updates := map[string]interface{}{
+				"title": routeInfo.UpdatedTitle,
+			}
+			if err := d.beads.UpdateBead(b.ID, updates); err != nil {
+				log.Printf("[Dispatcher] Failed to update bead %s with persona hint: %v", b.ID, err)
+			} else {
+				// Refresh the bead to get updated title
+				b.Title = routeInfo.UpdatedTitle
+			}
+		}
+
+		// Skip P0 beads UNLESS they are auto-filed bugs (which we want to dispatch)
+		isAutoFiled := strings.Contains(strings.ToLower(b.Title), "[auto-filed]")
+		if b.Priority == models.BeadPriorityP0 && !isAutoFiled {
 			skippedReasons["p0_priority"]++
 			continue
 		}
+
 		if b.Type == "decision" {
 			skippedReasons["decision_type"]++
 			continue
