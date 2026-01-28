@@ -55,7 +55,7 @@ let modalState = {
 // Helper to get authentication headers for API calls
 function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (authToken) {
+    if (AUTH_ENABLED && authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
     }
     return headers;
@@ -414,9 +414,7 @@ async function apiCall(endpoint, options = {}) {
             }
             if (!options.skipAutoFile
                 && typeof window !== 'undefined'
-                && typeof window.fileApiBug === 'function'
-                && response.status !== 401
-                && response.status !== 403) {
+                && typeof window.fileApiBug === 'function') {
                 window.fileApiBug({
                     endpoint,
                     method: options.method || 'GET',
