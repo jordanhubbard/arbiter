@@ -377,6 +377,7 @@ async function loadAll() {
 
 // API calls
 async function apiCall(endpoint, options = {}) {
+    let autoFiledApiFailure = false;
     try {
         const headers = {
             'Content-Type': 'application/json',
@@ -411,6 +412,20 @@ async function apiCall(endpoint, options = {}) {
                 await ensureAuth(true);
                 return apiCall(endpoint, { ...options, retryAuth: true });
             }
+            if (!options.skipAutoFile
+                && typeof window !== 'undefined'
+                && typeof window.fileApiBug === 'function'
+                && response.status !== 401
+                && response.status !== 403) {
+                window.fileApiBug({
+                    endpoint,
+                    method: options.method || 'GET',
+                    status: response.status,
+                    message,
+                    response: message
+                });
+                autoFiledApiFailure = true;
+            }
             throw new Error(message);
         }
         
@@ -420,6 +435,18 @@ async function apiCall(endpoint, options = {}) {
         
         return await response.json();
     } catch (error) {
+        if (!autoFiledApiFailure
+            && !options.skipAutoFile
+            && typeof window !== 'undefined'
+            && typeof window.fileApiBug === 'function') {
+            window.fileApiBug({
+                endpoint,
+                method: options.method || 'GET',
+                status: 0,
+                message: error.message || 'Network error',
+                response: error.message || ''
+            });
+        }
         console.error('[AgentiCorp] API Error:', error);
         if (!options.suppressToast) {
             showToast(error.message || 'Request failed', 'error');

@@ -19,8 +19,33 @@
     
     // Auto-file error to backend
     async function autoFileError(errorInfo) {
+        const errorType = errorInfo.errorType || 'js_error';
+        const severity = errorInfo.severity || (errorType === 'api_error' ? 'critical' : 'high');
+        const source = errorInfo.source || 'frontend';
+        const context = {
+            url: window.location.href,
+            source_file: errorInfo.source || 'unknown',
+            line: errorInfo.lineno || 0,
+            column: errorInfo.colno || 0,
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            state: typeof state !== 'undefined' ? {
+                beads: state.beads?.length || 0,
+                projects: state.projects?.length || 0,
+                agents: state.agents?.length || 0,
+                providers: state.providers?.length || 0
+            } : 'state not available'
+        };
+
+        if (errorInfo.context && typeof errorInfo.context === 'object') {
+            Object.assign(context, errorInfo.context);
+        }
+
+        const endpointKey = context.endpoint || '';
+        const statusKey = context.status || '';
         // Create a unique key for deduplication
-        const errorKey = `${errorInfo.message}:${errorInfo.source}:${errorInfo.lineno}`;
+        const errorKey = `${errorType}:${errorInfo.message}:${source}:${errorInfo.lineno}:${endpointKey}:${statusKey}`;
         
         // Check if we've already filed this error recently
         if (filedErrors.has(errorKey)) {
@@ -34,28 +59,15 @@
         // Show immediate toast
         showErrorToast('Internal UI error detected', 'error');
         
+        const titlePrefix = errorType === 'api_error' ? 'API Error' : 'UI Error';
         const bugReport = {
-            title: `[auto-filed] UI Error: ${(errorInfo.message || 'Unknown error').substring(0, 80)}`,
-            source: 'frontend',
-            error_type: 'js_error',
+            title: `${titlePrefix}: ${(errorInfo.message || 'Unknown error').substring(0, 80)}`,
+            source: source,
+            error_type: errorType,
             message: errorInfo.message || 'Unknown error',
             stack_trace: errorInfo.stack || '',
-            context: {
-                url: window.location.href,
-                source_file: errorInfo.source || 'unknown',
-                line: errorInfo.lineno || 0,
-                column: errorInfo.colno || 0,
-                user_agent: navigator.userAgent,
-                timestamp: new Date().toISOString(),
-                viewport: `${window.innerWidth}x${window.innerHeight}`,
-                state: typeof state !== 'undefined' ? {
-                    beads: state.beads?.length || 0,
-                    projects: state.projects?.length || 0,
-                    agents: state.agents?.length || 0,
-                    providers: state.providers?.length || 0
-                } : 'state not available'
-            },
-            severity: 'high',
+            context: context,
+            severity: severity,
             occurred_at: new Date().toISOString()
         };
         
@@ -127,8 +139,7 @@
             errorMsg.includes('[GlobalError]') ||       // Already handled by onerror
             errorMsg.includes('[UnhandledRejection]') || // Already handled
             errorMsg.includes('[AutoFile]') ||          // Our own logging
-            errorMsg.includes('[AgentiCorp]') ||        // App's own error handling
-            errorMsg.includes('Failed to load');        // Normal load failures shown in toast
+            errorMsg.includes('[AgentiCorp] API Error:'); // Avoid double-filing API errors
         
         // File if it contains error indicators and isn't expected
         const looksLikeError = 
@@ -151,13 +162,34 @@
     };
     
     // Manual filing function available globally
-    window.fileUIBug = function(message) {
+    window.fileUIBug = function(message, options = {}) {
         autoFileError({
             message: message || 'Manually reported UI issue',
-            source: 'manual',
+            source: options.source || 'manual',
             lineno: 0,
             colno: 0,
-            stack: new Error().stack
+            stack: new Error().stack,
+            errorType: options.errorType,
+            severity: options.severity,
+            context: options.context
+        });
+    };
+
+    window.fileApiBug = function(details = {}) {
+        autoFileError({
+            message: details.message || `API Error: ${details.method || 'GET'} ${details.endpoint || ''}`.trim(),
+            source: 'frontend',
+            lineno: 0,
+            colno: 0,
+            stack: details.stack || '',
+            errorType: 'api_error',
+            severity: 'critical',
+            context: {
+                endpoint: details.endpoint || '',
+                method: details.method || 'GET',
+                status: details.status || 0,
+                response: details.response || ''
+            }
         });
     };
     
