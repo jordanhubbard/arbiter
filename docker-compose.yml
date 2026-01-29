@@ -86,7 +86,7 @@ services:
     networks:
       - agenticorp-network
     extra_hosts:
-      - "puck.local:10.11.101.250"
+      - "plubbit.local:10.11.101.250"
       - "sparky.local:10.11.100.116"
     volumes:
       # Mount entire source directory for hot-reload and bead access
