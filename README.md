@@ -97,7 +97,7 @@ AgentiCorp is built with the following principles:
 
 - Docker (20.10+)
 - Docker Compose (1.29+)
-- Go 1.24+ (for local development only)
+- Go 1.25+ (for local development only)
 - Make (optional, for convenience commands)
 
 ## Quick Start

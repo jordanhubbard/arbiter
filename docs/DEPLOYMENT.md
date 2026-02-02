@@ -19,7 +19,7 @@ This guide covers deploying AgentiCorp in various environments, from development
 
 ### Prerequisites
 
-- Go 1.24+
+- Go 1.25+
 - Docker & Docker Compose
 - Git
 - Make (optional, for convenience commands)
@@ -85,7 +85,7 @@ The included `Dockerfile` uses multi-stage builds for optimal image size:
 
 ```dockerfile
 # Build stage: Compiles Go binary
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Runtime stage: Minimal Alpine image
 FROM alpine:latest
