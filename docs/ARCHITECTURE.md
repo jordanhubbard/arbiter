@@ -820,7 +820,7 @@ make distclean  # Wipes database and Temporal state
 
 ## High-Level Architecture Diagram
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 2, 2026 (Added Pattern Analysis & Optimization Engine)
 
 ### System Component Diagram
 
@@ -842,6 +842,8 @@ graph TB
             PRM[Provider Registry]
             PSM[Persona Manager]
             GM[GitOps Manager]
+            PTM[Pattern Manager]
+            ANL[Analytics Storage]
         end
         
         subgraph "Orchestration"
@@ -888,6 +890,8 @@ graph TB
     DM --> DB
     PRM --> DB
     OC --> DB
+    PTM --> DB
+    ANL --> DB
     
     PM --> GM
     GM -.syncs.-> GIT
@@ -922,6 +926,12 @@ graph TB
     BM --> EB
     PM --> EB
     PRM --> EB
+    PTM --> EB
+
+    API --> PTM
+    API --> ANL
+    PTM -.analyzes.-> ANL
+    PTM -.generates optimizations.-> DB
     
     style UI fill:#e1f5ff
     style API fill:#e1f5ff
@@ -1071,6 +1081,42 @@ graph TD
          │  LLM Providers  │
          │  (vLLM, Ollama) │
          └─────────────────┘
+```
+
+### Pattern Analysis & Optimization Flow
+
+```mermaid
+sequenceDiagram
+    participant API as REST API
+    participant PTM as Pattern Manager
+    participant ANL as Analytics Storage
+    participant DB as Database
+    participant User
+
+    User->>API: GET /api/v1/patterns/analysis
+    API->>PTM: Analyze patterns
+    PTM->>ANL: Fetch request logs
+    ANL-->>PTM: RequestLog[] (7 days)
+
+    Note over PTM: Multi-dimensional clustering:<br/>- Provider-Model<br/>- User<br/>- Cost bands<br/>- Temporal (6h windows)<br/>- Latency bands
+
+    PTM->>PTM: Detect anomalies (2σ)
+    PTM->>PTM: Generate optimizations
+    PTM->>DB: Store optimizations
+    DB-->>PTM: Optimization IDs
+    PTM-->>API: PatternReport + Optimizations
+    API-->>User: JSON response
+
+    User->>API: GET /api/v1/optimizations
+    API->>DB: List active optimizations
+    DB-->>API: Optimization[]
+    API-->>User: Recommendations
+
+    User->>API: POST /api/v1/optimizations/:id/apply
+    API->>DB: Update status = applied
+    API->>PTM: Execute optimization (enable cache)
+    PTM-->>API: Success
+    API-->>User: Applied confirmation
 ```
 
 ## Extensions
