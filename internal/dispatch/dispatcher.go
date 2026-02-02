@@ -501,7 +501,11 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 	}
 	log.Printf("[Dispatcher] Bead %s dispatch count: %d", candidate.ID, dispatchCount)
 
-	_ = d.agents.AssignBead(ag.ID, candidate.ID)
+	// FIX #7: Log errors instead of silently discarding them
+	if err := d.agents.AssignBead(ag.ID, candidate.ID); err != nil {
+		log.Printf("[Dispatcher] CRITICAL: Failed to assign bead %s to agent %s: %v", candidate.ID, ag.ID, err)
+		// Continue anyway - the task will still be submitted to the worker
+	}
 	observability.Info("dispatch.assign", map[string]interface{}{
 		"agent_id":    ag.ID,
 		"bead_id":     candidate.ID,
@@ -509,8 +513,12 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 		"provider_id": ag.ProviderID,
 	})
 	if d.eventBus != nil {
-		_ = d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadAssigned, candidate.ID, selectedProjectID, map[string]interface{}{"assigned_to": ag.ID})
-		_ = d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": string(models.BeadStatusInProgress)})
+		if err := d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadAssigned, candidate.ID, selectedProjectID, map[string]interface{}{"assigned_to": ag.ID}); err != nil {
+			log.Printf("[Dispatcher] Warning: Failed to publish bead assigned event for %s: %v", candidate.ID, err)
+		}
+		if err := d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": string(models.BeadStatusInProgress)}); err != nil {
+			log.Printf("[Dispatcher] Warning: Failed to publish bead status change event for %s: %v", candidate.ID, err)
+		}
 	}
 
 	proj, _ := d.projects.GetProject(selectedProjectID)
@@ -555,13 +563,18 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 			updates["status"] = models.BeadStatusOpen
 			updates["assigned_to"] = ""
 		}
-		_ = d.beads.UpdateBead(candidate.ID, updates)
+		// FIX #7: Log errors instead of silently discarding them
+		if err := d.beads.UpdateBead(candidate.ID, updates); err != nil {
+			log.Printf("[Dispatcher] CRITICAL: Failed to update bead %s with context/loop detection: %v", candidate.ID, err)
+		}
 		if d.eventBus != nil {
 			status := string(models.BeadStatusInProgress)
 			if loopDetected {
 				status = string(models.BeadStatusOpen)
 			}
-			_ = d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": status})
+			if err := d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": status}); err != nil {
+				log.Printf("[Dispatcher] Warning: Failed to publish bead status change event for %s: %v", candidate.ID, err)
+			}
 		}
 
 		// Handle workflow failure
@@ -605,13 +618,18 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 		updates["status"] = models.BeadStatusOpen
 		updates["assigned_to"] = ""
 	}
-	_ = d.beads.UpdateBead(candidate.ID, updates)
+	// FIX #7: Log errors instead of silently discarding them
+	if err := d.beads.UpdateBead(candidate.ID, updates); err != nil {
+		log.Printf("[Dispatcher] CRITICAL: Failed to update bead %s after task failure: %v", candidate.ID, err)
+	}
 	if d.eventBus != nil {
 		status := string(models.BeadStatusInProgress)
 		if loopDetected {
 			status = string(models.BeadStatusOpen)
 		}
-		_ = d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": status})
+		if err := d.eventBus.PublishBeadEvent(eventbus.EventTypeBeadStatusChange, candidate.ID, selectedProjectID, map[string]interface{}{"status": status}); err != nil {
+			log.Printf("[Dispatcher] Warning: Failed to publish bead status change event for %s: %v", candidate.ID, err)
+		}
 	}
 
 	// Advance workflow after successful task execution

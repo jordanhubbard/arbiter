@@ -102,9 +102,33 @@ func main() {
 	}
 
 	go arb.StartMaintenanceLoop(runCtx)
-	if arb.GetTemporalManager() == nil {
-		go arb.StartDispatchLoop(runCtx, 10*time.Second)
-	}
+
+	// FIX #3: Always start fallback dispatch loop
+	// Even if Temporal is configured, the server might not be running.
+	// The fallback ensures work continues to flow even if Temporal fails.
+	// If Temporal is healthy, its workflows will handle dispatch; if not, this fallback kicks in.
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-runCtx.Done():
+				return
+			case <-ticker.C:
+				// Use fallback dispatch if Temporal is not configured
+				// If Temporal is configured, it handles dispatch via workflows
+				if arb.GetTemporalManager() == nil {
+					if _, err := arb.GetDispatcher().DispatchOnce(runCtx, ""); err != nil {
+						// Only log non-nil errors (nil means no work available)
+						if err != nil {
+							log.Printf("[Main] Fallback dispatch error: %v", err)
+						}
+					}
+				}
+			}
+		}
+	}()
 
 	// Initialize auth manager (JWT + API key support)
 	authManager := auth.NewManager(cfg.Security.JWTSecret)

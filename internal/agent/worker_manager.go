@@ -591,6 +591,56 @@ func (m *WorkerManager) GetPoolStats() worker.PoolStats {
 	return m.workerPool.GetPoolStats()
 }
 
+// ResetStuckAgents resets agents that have been in "working" state too long
+// or restores paused agents that have providers assigned.
+// Returns the number of agents that were reset.
+func (m *WorkerManager) ResetStuckAgents(maxWorkingDuration time.Duration) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	count := 0
+	now := time.Now()
+
+	for _, agent := range m.agents {
+		if agent.Status == "working" {
+			elapsed := now.Sub(agent.LastActive)
+			if elapsed > maxWorkingDuration {
+				log.Printf("[WorkerManager] Resetting stuck agent %s (working for %v)", agent.ID, elapsed)
+				agent.Status = "idle"
+				agent.CurrentBead = ""
+
+				// Persist the change if we have a persister
+				if m.agentPersister != nil {
+					_ = m.agentPersister.UpsertAgent(agent)
+				}
+
+				// Publish event
+				if m.eventBus != nil {
+					eventData := map[string]interface{}{
+						"agent_id":   agent.ID,
+						"project_id": agent.ProjectID,
+						"reason":     "stuck_timeout",
+					}
+					_ = m.eventBus.PublishAgentEvent("agent.reset", agent.ID, agent.ProjectID, eventData)
+				}
+
+				count++
+			}
+		} else if agent.Status == "paused" && agent.ProviderID != "" {
+			// Try to restore paused agents that have providers
+			log.Printf("[WorkerManager] Attempting to restore paused agent %s", agent.ID)
+			if _, err := m.RestoreAgentWorker(context.Background(), agent); err != nil {
+				log.Printf("[WorkerManager] Failed to restore agent %s: %v", agent.ID, err)
+			} else {
+				log.Printf("[WorkerManager] Successfully restored paused agent %s to idle", agent.ID)
+				count++
+			}
+		}
+	}
+
+	return count
+}
+
 // StopAll stops all agents and workers
 func (m *WorkerManager) StopAll() {
 	m.mu.Lock()

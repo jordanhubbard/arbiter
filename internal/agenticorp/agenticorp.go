@@ -16,6 +16,7 @@ import (
 	"github.com/jordanhubbard/agenticorp/internal/actions"
 	"github.com/jordanhubbard/agenticorp/internal/activity"
 	"github.com/jordanhubbard/agenticorp/internal/agent"
+	"github.com/jordanhubbard/agenticorp/internal/analytics"
 	"github.com/jordanhubbard/agenticorp/internal/beads"
 	"github.com/jordanhubbard/agenticorp/internal/comments"
 	"github.com/jordanhubbard/agenticorp/internal/database"
@@ -32,6 +33,7 @@ import (
 	"github.com/jordanhubbard/agenticorp/internal/notifications"
 	"github.com/jordanhubbard/agenticorp/internal/observability"
 	"github.com/jordanhubbard/agenticorp/internal/orgchart"
+	"github.com/jordanhubbard/agenticorp/internal/patterns"
 	"github.com/jordanhubbard/agenticorp/internal/persona"
 	"github.com/jordanhubbard/agenticorp/internal/project"
 	"github.com/jordanhubbard/agenticorp/internal/provider"
@@ -80,6 +82,7 @@ type AgentiCorp struct {
 	motivationEngine    *motivation.Engine
 	idleDetector        *motivation.IdleDetector
 	workflowEngine      *workflow.Engine
+	patternManager      *patterns.Manager
 	metrics             *metrics.Metrics
 	readinessMu         sync.Mutex
 	readinessCache      map[string]projectReadinessState
@@ -190,6 +193,15 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 		commentsMgr = comments.NewManager(db, notificationMgr, eb)
 	}
 
+	// Initialize pattern manager if database is available
+	var patternMgr *patterns.Manager
+	if db != nil {
+		analyticsStorage, err := analytics.NewDatabaseStorage(db.DB())
+		if err == nil && analyticsStorage != nil {
+			patternMgr = patterns.NewManager(analyticsStorage, nil)
+		}
+	}
+
 	arb := &AgentiCorp{
 		config:              cfg,
 		agentManager:        agentMgr,
@@ -213,6 +225,7 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 		motivationRegistry:  motivationRegistry,
 		idleDetector:        idleDetector,
 		workflowEngine:      workflowEngine,
+		patternManager:      patternMgr,
 		metrics:             metrics.NewMetrics(),
 	}
 
@@ -551,6 +564,33 @@ func (a *AgentiCorp) Initialize(ctx context.Context) error {
 			})
 		}
 
+		// FIX #2: Activate all enabled providers on startup
+		// This is critical - providers default to "pending" status and the dispatcher
+		// will park if no active providers exist. We force-activate all enabled providers.
+		log.Printf("[AgentiCorp] Activating enabled providers...")
+		activatedCount := 0
+		for _, p := range providers {
+			if p.Status == "pending" || p.Status == "" {
+				log.Printf("[AgentiCorp] Activating provider: %s (type: %s)", p.ID, p.Type)
+				p.Status = "active"
+				if err := a.database.UpsertProvider(p); err != nil {
+					log.Printf("[AgentiCorp] Warning: Failed to activate provider %s: %v", p.ID, err)
+				} else {
+					// Also update in-memory registry
+					if regConfig, err := a.providerRegistry.Get(p.ID); err == nil && regConfig != nil {
+						regConfig.Config.Status = "active"
+						_ = a.providerRegistry.Upsert(regConfig.Config)
+					}
+					activatedCount++
+				}
+			}
+		}
+		if activatedCount > 0 {
+			log.Printf("[AgentiCorp] Successfully activated %d providers", activatedCount)
+		} else {
+			log.Printf("[AgentiCorp] Warning: No providers activated - work dispatch may not occur")
+		}
+
 		// Restore agents from database (best-effort).
 		storedAgents, err := a.database.ListAgents()
 		if err != nil {
@@ -641,6 +681,57 @@ func (a *AgentiCorp) Initialize(ctx context.Context) error {
 		} else {
 			log.Printf("Registered %d default motivations", a.motivationRegistry.Count())
 		}
+	}
+
+	// FIX #1: Start motivation engine evaluation loop
+	// The motivation engine creates beads automatically based on conditions
+	// (idle detection, deadline monitoring, budget thresholds, etc.)
+	if a.motivationEngine != nil {
+		if err := a.motivationEngine.Start(ctx); err != nil {
+			log.Printf("[AgentiCorp] Warning: Failed to start motivation engine: %v", err)
+		} else {
+			log.Printf("[AgentiCorp] Motivation engine started successfully")
+		}
+	} else {
+		log.Printf("[AgentiCorp] Warning: Motivation engine not initialized")
+	}
+
+	// FIX #4: Ensure at least one project has beads for work to flow
+	// If no beads exist across all projects, create a diagnostic bead
+	hasBeads := false
+	allProjects := a.projectManager.ListProjects()
+	for _, proj := range allProjects {
+		if proj == nil {
+			continue
+		}
+		beads, _ := a.beadsManager.ListBeads(map[string]interface{}{"project_id": proj.ID})
+		if len(beads) > 0 {
+			hasBeads = true
+			break
+		}
+	}
+
+	// If no beads exist and we have at least one project, create a sample diagnostic bead
+	if !hasBeads && len(allProjects) > 0 {
+		proj := allProjects[0]
+		log.Printf("[AgentiCorp] No beads found - creating sample diagnostic bead for project %s", proj.ID)
+
+		bead, err := a.beadsManager.CreateBead(
+			"System diagnostic check",
+			"This bead was auto-created to verify the work flow is operational. The system detected no beads in any project and created this diagnostic task. If you see this bead completed successfully, the work flow is functioning correctly.",
+			models.BeadPriorityP2,
+			"task",
+			proj.ID,
+		)
+		if err != nil {
+			log.Printf("[AgentiCorp] Failed to create sample diagnostic bead: %v", err)
+		} else {
+			log.Printf("[AgentiCorp] Created sample diagnostic bead: %s", bead.ID)
+		}
+	} else if len(allProjects) == 0 {
+		log.Printf("[AgentiCorp] Warning: No projects configured - no work can be dispatched")
+	} else {
+		log.Printf("[AgentiCorp] Found existing beads across projects - work flow should be operational")
 	}
 
 	// Load default workflows
@@ -889,6 +980,11 @@ func (a *AgentiCorp) GetCommentsManager() *comments.Manager {
 // GetLogManager returns the log manager
 func (a *AgentiCorp) GetLogManager() *logging.Manager {
 	return a.logManager
+}
+
+// GetPatternManager returns the pattern manager
+func (a *AgentiCorp) GetPatternManager() *patterns.Manager {
+	return a.patternManager
 }
 
 // AdvanceWorkflowWithCondition advances a bead's workflow with a specific condition
@@ -2649,6 +2745,12 @@ func (a *AgentiCorp) StartMaintenanceLoop(ctx context.Context) {
 					// Log: agent stale, releasing locks
 					_ = a.fileLockManager.ReleaseAgentLocks(agent.ID)
 				}
+			}
+
+			// FIX #5: Reset agents stuck in working state for > 5 minutes
+			resetCount := a.agentManager.ResetStuckAgents(5 * time.Minute)
+			if resetCount > 0 {
+				log.Printf("[Maintenance] Reset %d stuck agents", resetCount)
 			}
 
 			// Auto-escalate loop-detected beads to CEO (best-effort).
