@@ -257,6 +257,14 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("/api/v1/cache/optimize", s.handleCacheOptimize)
 	mux.HandleFunc("/api/v1/cache/recommendations", s.handleCacheRecommendations)
 
+	// Pattern analysis routes
+	mux.HandleFunc("/api/v1/patterns/analysis", s.handlePatternAnalysis)
+	mux.HandleFunc("/api/v1/patterns/expensive", s.handleExpensivePatterns)
+	mux.HandleFunc("/api/v1/patterns/anomalies", s.handleAnomalies)
+	mux.HandleFunc("/api/v1/optimizations", s.handleOptimizations)
+	mux.HandleFunc("/api/v1/optimizations/substitutions", s.handleSubstitutions)
+	mux.HandleFunc("/api/v1/optimizations/", s.handleOptimizationActions)
+
 	// Health check endpoints
 	mux.HandleFunc("/health", s.handleHealthDetail)      // Detailed health
 	mux.HandleFunc("/health/live", s.handleHealthLive)   // Liveness probe
