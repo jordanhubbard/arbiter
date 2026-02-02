@@ -1,6 +1,6 @@
 # AgentiCorp Architecture Guide
 
-**Last Updated**: January 28, 2026 (Readiness gate + per-project git keys)
+**Last Updated**: February 2, 2026 (Work flow fixes + pattern analysis engine)
 
 This document describes the architecture of AgentiCorp, the Agent Orchestration System for managing distributed AI workflows.
 
@@ -24,6 +24,9 @@ AgentiCorp is a comprehensive agent orchestration platform that:
 - **NEW (v1.2)**: Idle detection with system/project/agent granularity
 - **NEW (v1.2)**: GitHub webhook integration for external events
 - **NEW (v1.2)**: Milestone and deadline tracking
+- **NEW (v1.3)**: Activity feed and team notifications system
+- **NEW (v1.4)**: Usage pattern analysis and cost optimization engine
+- **NEW (v1.4)**: Critical work flow fixes (provider activation, agent recovery)
 
 ## Core Components
 
@@ -606,6 +609,68 @@ EventBus → ActivityManager → NotificationManager → User SSE Streams
 **Permission Filtering**: Users only see activities from projects they have `projects:read` access to, plus global activities (providers, system events)
 
 See [docs/activity-notifications-implementation.md](activity-notifications-implementation.md) for complete reference.
+
+### 15. Usage Pattern Analysis & Optimization Engine (NEW v1.4)
+
+**Purpose**: Analyze usage patterns across multiple dimensions to identify expensive operations, detect anomalies, and generate cost optimization recommendations.
+
+**Key Files**:
+- `internal/patterns/analyzer.go` - Multi-dimensional pattern clustering
+- `internal/patterns/optimizer.go` - Generates optimization opportunities
+- `internal/patterns/manager.go` - Coordinates analysis and optimization
+- `internal/api/handlers_patterns.go` - REST API endpoints
+- `internal/database/migrations_patterns.go` - Database schema
+
+**Architecture**:
+```
+RequestLogs (Analytics) → Pattern Analyzer → Optimization Engine → Recommendations
+                              ↓                     ↓
+                        Pattern Clusters    [Cache, Substitution, Batching, etc.]
+```
+
+**Features**:
+
+1. **Multi-dimensional Pattern Clustering**:
+   - Provider-Model: Group by provider + model for cost comparison
+   - User Clustering: Requests per user, cost per user, favorite models
+   - Cost Clustering: Band requests into cost tiers (<$0.01, $0.01-$0.10, etc.)
+   - Temporal Clustering: 6-hour windows for capacity planning
+   - Latency Clustering: Performance band analysis (<100ms, 100-500ms, etc.)
+
+2. **Anomaly Detection**:
+   - Cost spikes: Requests >2σ from mean cost
+   - Latency spikes: Requests >2σ from mean latency
+   - Error rate anomalies: Unusual failure patterns
+   - Usage pattern anomalies: Unexpected request volumes
+
+3. **Optimization Recommendations**:
+   - **Caching**: High-frequency identical requests
+   - **Model Substitution**: Cheaper model alternatives (claude-3.5 → haiku)
+   - **Batching**: Sequential requests that could be combined
+   - **Provider Switch**: Same model, lower-cost provider
+   - **Cost Reduction**: Expensive patterns with optimization paths
+
+**API Endpoints**:
+- `GET /api/v1/patterns/analysis` - Full pattern analysis report with clustering
+- `GET /api/v1/patterns/expensive` - Top expensive patterns sorted by total cost
+- `GET /api/v1/patterns/anomalies` - Detected statistical anomalies
+- `GET /api/v1/optimizations` - Active optimization opportunities
+- `GET /api/v1/optimizations/substitutions` - Model substitution recommendations
+- `POST /api/v1/optimizations/:id/apply` - Apply optimization (enable caching, etc.)
+- `POST /api/v1/optimizations/:id/dismiss` - Dismiss optimization permanently
+
+**Database Tables**:
+- `optimizations` - Active optimization recommendations with status
+- `pattern_cache` - Cached pattern analysis results (TTL-based)
+
+**Use Cases**:
+- CFO/Finance: Identify cost reduction opportunities
+- DevOps: Find performance bottlenecks via latency clustering
+- Product: Track per-user costs and usage patterns
+- Engineering: Detect anomalies and debug expensive operations
+- Capacity Planning: Temporal clustering for load prediction
+
+See [docs/usage-pattern-analysis.md](usage-pattern-analysis.md) for complete reference.
 
 ## Data Flow
 

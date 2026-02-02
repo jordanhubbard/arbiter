@@ -14,6 +14,7 @@ Then explore:
 - [Entities Reference](docs/ENTITIES_REFERENCE.md) - All data structures explained
 - [Temporal DSL Guide](docs/TEMPORAL_DSL.md) - Workflow language for agents
 - [Analytics Guide](docs/ANALYTICS_GUIDE.md) - Usage monitoring and cost tracking
+- [Usage Pattern Analysis](docs/usage-pattern-analysis.md) - Pattern detection and optimization recommendations
 - [Activity Feed & Notifications](docs/activity-notifications-implementation.md) - Team activity tracking and notifications
 - [API Authentication](docs/AUTH.md) - JWT, API keys, and RBAC
 - [Developer Guide](AGENTS.md) - For contributors and custom agents
@@ -30,6 +31,7 @@ Then explore:
 - 🎯 **Smart Routing**: Intelligent task assignment and agent coordination
 - 🔒 **Secure**: Encrypted secret storage and secure credential management
 - 📈 **Analytics & Cost Tracking**: Real-time usage monitoring, cost tracking, and spending alerts
+- 🔍 **Usage Pattern Analysis**: Multi-dimensional pattern clustering, anomaly detection, and cost optimization recommendations
 
 ## Default Personas
 
