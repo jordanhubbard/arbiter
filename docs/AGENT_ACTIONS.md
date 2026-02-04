@@ -273,6 +273,96 @@ Run pytest with pattern:
 }
 ```
 
+#### run_linter
+
+Execute linters to check code quality and style.
+
+```json
+{
+  "type": "run_linter",
+  "files": ["internal/*.go", "pkg/*.go"],
+  "framework": "golangci-lint",
+  "timeout_seconds": 300
+}
+```
+
+**Fields:**
+- `files` (optional): Specific files/patterns to lint (default: all files)
+- `framework` (optional): Linter framework ("golangci-lint", "eslint", "pylint")
+- `timeout_seconds` (optional): Maximum execution time in seconds
+
+**Returns:**
+```json
+{
+  "framework": "golangci-lint",
+  "success": false,
+  "exit_code": 1,
+  "duration": "2.345s",
+  "violation_count": 2,
+  "violations": [
+    {
+      "file": "internal/foo.go",
+      "line": 10,
+      "column": 2,
+      "rule": "unused",
+      "severity": "error",
+      "message": "unused variable 'x'",
+      "linter": "unused"
+    }
+  ],
+  "raw_output": "full linter output..."
+}
+```
+
+**Framework Auto-Detection:**
+
+If `framework` is not specified, the system auto-detects based on:
+
+- **golangci-lint**: Presence of `go.mod` or `*.go` files
+- **eslint**: `.eslintrc.js`, `.eslintrc.json`, or `eslint` in `package.json`
+- **pylint**: `.pylintrc` or `*.py` files
+
+**Examples:**
+
+Run all linters with auto-detection:
+```json
+{
+  "type": "run_linter"
+}
+```
+
+Run golangci-lint on specific files:
+```json
+{
+  "type": "run_linter",
+  "files": ["internal/api/*.go"],
+  "framework": "golangci-lint"
+}
+```
+
+Run eslint with custom timeout:
+```json
+{
+  "type": "run_linter",
+  "framework": "eslint",
+  "timeout_seconds": 600
+}
+```
+
+**Lint-Fix-Relint Pattern:**
+
+```json
+{
+  "actions": [
+    {"type": "run_linter"},
+    {"type": "read_file", "path": "internal/foo.go"},
+    {"type": "edit_code", "path": "internal/foo.go", "patch": "..."},
+    {"type": "run_linter", "files": ["internal/foo.go"]}
+  ],
+  "notes": "Fixed unused variable and formatting issues"
+}
+```
+
 ### Git Operations
 
 #### git_status

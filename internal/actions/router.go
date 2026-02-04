@@ -29,6 +29,10 @@ type TestRunner interface {
 	Run(ctx context.Context, projectPath string, testPattern, framework string, timeoutSeconds int) (map[string]interface{}, error)
 }
 
+type LinterRunner interface {
+	Run(ctx context.Context, projectPath string, files []string, framework string, timeoutSeconds int) (map[string]interface{}, error)
+}
+
 type FileManager interface {
 	ReadFile(ctx context.Context, projectID, path string) (*files.FileResult, error)
 	WriteFile(ctx context.Context, projectID, path, content string) (*files.WriteResult, error)
@@ -69,6 +73,7 @@ type Router struct {
 	Escalator BeadEscalator
 	Commands  CommandExecutor
 	Tests     TestRunner
+	Linter    LinterRunner
 	Files     FileManager
 	Git       GitOperator
 	Logger    ActionLogger
@@ -321,6 +326,24 @@ func (r *Router) executeAction(ctx context.Context, action Action, actx ActionCo
 			ActionType: action.Type,
 			Status:     "executed",
 			Message:    "tests executed",
+			Metadata:   result,
+		}
+	case ActionRunLinter:
+		if r.Linter == nil {
+			return Result{ActionType: action.Type, Status: "error", Message: "linter not configured"}
+		}
+		// Get project path from Files manager or use default
+		projectPath := "."
+		// TODO: Get actual project path from context or Files manager
+
+		result, err := r.Linter.Run(ctx, projectPath, action.Files, action.Framework, action.TimeoutSeconds)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: err.Error()}
+		}
+		return Result{
+			ActionType: action.Type,
+			Status:     "executed",
+			Message:    "linter executed",
 			Metadata:   result,
 		}
 	case ActionCreateBead:

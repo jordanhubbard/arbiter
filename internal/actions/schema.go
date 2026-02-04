@@ -15,6 +15,7 @@ const (
 	ActionWriteFile   = "write_file"
 	ActionRunCommand  = "run_command"
 	ActionRunTests    = "run_tests"
+	ActionRunLinter   = "run_linter"
 	ActionCreateBead  = "create_bead"
 	ActionCloseBead   = "close_bead"
 	ActionEscalateCEO = "escalate_ceo"
@@ -52,6 +53,9 @@ type Action struct {
 	TestPattern    string `json:"test_pattern,omitempty"`
 	Framework      string `json:"framework,omitempty"`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
+
+	// Linter execution fields
+	Files []string `json:"files,omitempty"` // Specific files to lint
 
 	Bead *BeadPayload `json:"bead,omitempty"`
 
@@ -258,6 +262,9 @@ func validateAction(action Action) error {
 	case ActionRunTests:
 		// All fields are optional - defaults will be used
 		// test_pattern, framework (auto-detect), timeout_seconds (default)
+	case ActionRunLinter:
+		// All fields are optional - defaults will be used
+		// files, framework (auto-detect), timeout_seconds (default)
 	case ActionCreateBead:
 		if action.Bead == nil {
 			return errors.New("create_bead requires bead payload")

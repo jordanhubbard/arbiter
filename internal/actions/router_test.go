@@ -304,3 +304,154 @@ func TestRouter_Execute_MultipleRunTests(t *testing.T) {
 		}
 	}
 }
+
+// mockLinterRunner implements the LinterRunner interface for testing
+type mockLinterRunner struct {
+	runFunc func(ctx context.Context, projectPath string, files []string, framework string, timeoutSeconds int) (map[string]interface{}, error)
+}
+
+func (m *mockLinterRunner) Run(ctx context.Context, projectPath string, files []string, framework string, timeoutSeconds int) (map[string]interface{}, error) {
+	if m.runFunc != nil {
+		return m.runFunc(ctx, projectPath, files, framework, timeoutSeconds)
+	}
+	// Default successful lint result
+	return map[string]interface{}{
+		"framework":       "golangci-lint",
+		"success":         true,
+		"exit_code":       0,
+		"violations":      []interface{}{},
+		"violation_count": 0,
+	}, nil
+}
+
+func TestRouter_ExecuteAction_RunLinter_Success(t *testing.T) {
+	mock := &mockLinterRunner{
+		runFunc: func(ctx context.Context, projectPath string, files []string, framework string, timeoutSeconds int) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"framework":       "golangci-lint",
+				"success":         true,
+				"exit_code":       0,
+				"violations":      []interface{}{},
+				"violation_count": 0,
+			}, nil
+		},
+	}
+
+	router := &Router{
+		Linter: mock,
+	}
+
+	action := Action{
+		Type:           ActionRunLinter,
+		Files:          []string{"internal/*.go"},
+		Framework:      "golangci-lint",
+		TimeoutSeconds: 300,
+	}
+
+	actx := ActionContext{
+		AgentID:   "agent-123",
+		BeadID:    "bead-456",
+		ProjectID: "proj-789",
+	}
+
+	result := router.executeAction(context.Background(), action, actx)
+
+	if result.ActionType != ActionRunLinter {
+		t.Errorf("Expected action type %s, got %s", ActionRunLinter, result.ActionType)
+	}
+
+	if result.Status != "executed" {
+		t.Errorf("Expected status 'executed', got %s", result.Status)
+	}
+
+	if result.Message != "linter executed" {
+		t.Errorf("Expected message 'linter executed', got %s", result.Message)
+	}
+
+	if result.Metadata == nil {
+		t.Fatal("Expected metadata to be present")
+	}
+
+	// Check metadata fields
+	if success, ok := result.Metadata["success"].(bool); !ok || !success {
+		t.Error("Expected success to be true")
+	}
+}
+
+func TestRouter_ExecuteAction_RunLinter_WithViolations(t *testing.T) {
+	mock := &mockLinterRunner{
+		runFunc: func(ctx context.Context, projectPath string, files []string, framework string, timeoutSeconds int) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"framework": "golangci-lint",
+				"success":   false,
+				"exit_code": 1,
+				"violations": []map[string]interface{}{
+					{
+						"file":     "internal/foo.go",
+						"line":     10,
+						"column":   2,
+						"rule":     "unused",
+						"severity": "error",
+						"message":  "unused variable 'x'",
+					},
+				},
+				"violation_count": 1,
+			}, nil
+		},
+	}
+
+	router := &Router{
+		Linter: mock,
+	}
+
+	action := Action{
+		Type: ActionRunLinter,
+	}
+
+	actx := ActionContext{
+		AgentID:   "agent-123",
+		BeadID:    "bead-456",
+		ProjectID: "proj-789",
+	}
+
+	result := router.executeAction(context.Background(), action, actx)
+
+	if result.Status != "executed" {
+		t.Errorf("Expected status 'executed', got %s", result.Status)
+	}
+
+	// Check that violation information is present
+	if success, ok := result.Metadata["success"].(bool); !ok || success {
+		t.Error("Expected success to be false")
+	}
+
+	if count, ok := result.Metadata["violation_count"].(int); !ok || count != 1 {
+		t.Errorf("Expected violation_count 1, got %v", count)
+	}
+}
+
+func TestRouter_ExecuteAction_RunLinter_NoLinter(t *testing.T) {
+	router := &Router{
+		Linter: nil, // No linter configured
+	}
+
+	action := Action{
+		Type: ActionRunLinter,
+	}
+
+	actx := ActionContext{
+		AgentID:   "agent-123",
+		BeadID:    "bead-456",
+		ProjectID: "proj-789",
+	}
+
+	result := router.executeAction(context.Background(), action, actx)
+
+	if result.Status != "error" {
+		t.Errorf("Expected status 'error', got %s", result.Status)
+	}
+
+	if result.Message != "linter not configured" {
+		t.Errorf("Expected error message about linter, got: %s", result.Message)
+	}
+}

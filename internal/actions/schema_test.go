@@ -235,3 +235,80 @@ func TestActionRunTests_MultipleActions(t *testing.T) {
 		t.Errorf("Expected notes to match, got: %s", env.Notes)
 	}
 }
+
+func TestActionRunLinter_Validation(t *testing.T) {
+	tests := []struct {
+		name    string
+		action  Action
+		wantErr bool
+	}{
+		{
+			name: "Valid with all fields",
+			action: Action{
+				Type:           ActionRunLinter,
+				Files:          []string{"foo.go", "bar.go"},
+				Framework:      "golangci-lint",
+				TimeoutSeconds: 300,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid with no fields (all optional)",
+			action: Action{
+				Type: ActionRunLinter,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid with only files",
+			action: Action{
+				Type:  ActionRunLinter,
+				Files: []string{"src/*.go"},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAction(tt.action)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateAction() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestActionRunLinter_JSONDecoding(t *testing.T) {
+	json := `{
+		"actions": [{
+			"type": "run_linter",
+			"files": ["internal/*.go", "pkg/*.go"],
+			"framework": "golangci-lint",
+			"timeout_seconds": 300
+		}]
+	}`
+
+	env, err := DecodeStrict([]byte(json))
+	if err != nil {
+		t.Fatalf("DecodeStrict() failed: %v", err)
+	}
+
+	if len(env.Actions) != 1 {
+		t.Fatal("Expected 1 action")
+	}
+
+	action := env.Actions[0]
+	if action.Type != ActionRunLinter {
+		t.Errorf("Expected type %s, got %s", ActionRunLinter, action.Type)
+	}
+	if len(action.Files) != 2 {
+		t.Errorf("Expected 2 files, got %d", len(action.Files))
+	}
+	if action.Framework != "golangci-lint" {
+		t.Errorf("Expected framework golangci-lint, got %s", action.Framework)
+	}
+	if action.TimeoutSeconds != 300 {
+		t.Errorf("Expected timeout 300, got %d", action.TimeoutSeconds)
+	}
+}
