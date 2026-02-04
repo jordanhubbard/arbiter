@@ -253,6 +253,10 @@ func New(cfg *config.Config) (*AgentiCorp, error) {
 	arb.dispatcher.SetReadinessMode(dispatch.ReadinessMode(cfg.Readiness.Mode))
 	arb.dispatcher.SetMaxDispatchHops(cfg.Dispatch.MaxHops)
 	arb.dispatcher.SetEscalator(arb)
+	// Enable conversation context support for multi-turn conversations
+	if db != nil {
+		arb.dispatcher.SetDatabase(db)
+	}
 
 	// Setup provider metrics tracking
 	arb.setupProviderMetrics()

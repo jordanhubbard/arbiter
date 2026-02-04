@@ -10,8 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jordanhubbard/agenticorp/internal/agent"
 	"github.com/jordanhubbard/agenticorp/internal/beads"
+	"github.com/jordanhubbard/agenticorp/internal/database"
 	"github.com/jordanhubbard/agenticorp/internal/observability"
 	"github.com/jordanhubbard/agenticorp/internal/project"
 	"github.com/jordanhubbard/agenticorp/internal/provider"
@@ -57,6 +59,7 @@ type Dispatcher struct {
 	projects        *project.Manager
 	agents          *agent.WorkerManager
 	providers       *provider.Registry
+	db              *database.Database
 	eventBus        *eventbus.EventBus
 	workflowEngine  *workflow.Engine
 	personaMatcher  *PersonaMatcher
@@ -98,6 +101,13 @@ func (d *Dispatcher) GetSystemStatus() SystemStatus {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.status
+}
+
+// SetDatabase sets the database for conversation context management
+func (d *Dispatcher) SetDatabase(db *database.Database) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.db = db
 }
 
 // SetWorkflowEngine sets the workflow engine for workflow-aware dispatching
@@ -523,12 +533,27 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 
 	proj, _ := d.projects.GetProject(selectedProjectID)
 
+	// Get or create conversation session for multi-turn conversation support
+	var conversationSession *models.ConversationContext
+	if d.db != nil {
+		var err error
+		conversationSession, err = d.getOrCreateConversationSession(candidate, selectedProjectID)
+		if err != nil {
+			log.Printf("[Dispatcher] Warning: Failed to get/create conversation session for bead %s: %v", candidate.ID, err)
+			// Continue without conversation session (falls back to single-shot mode)
+		} else if conversationSession != nil {
+			log.Printf("[Dispatcher] Using conversation session %s for bead %s (messages: %d)",
+				conversationSession.SessionID, candidate.ID, len(conversationSession.Messages))
+		}
+	}
+
 	task := &worker.Task{
-		ID:          fmt.Sprintf("task-%s-%d", candidate.ID, time.Now().UnixNano()),
-		Description: buildBeadDescription(candidate),
-		Context:     buildBeadContext(candidate, proj),
-		BeadID:      candidate.ID,
-		ProjectID:   selectedProjectID,
+		ID:                  fmt.Sprintf("task-%s-%d", candidate.ID, time.Now().UnixNano()),
+		Description:         buildBeadDescription(candidate),
+		Context:             buildBeadContext(candidate, proj),
+		BeadID:              candidate.ID,
+		ProjectID:           selectedProjectID,
+		ConversationSession: conversationSession,
 	}
 
 	d.setStatus(StatusActive, fmt.Sprintf("dispatching %s", candidate.ID))
@@ -756,6 +781,79 @@ func (d *Dispatcher) setStatus(state StatusState, reason string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.status = SystemStatus{State: state, Reason: reason, UpdatedAt: time.Now()}
+}
+
+// getOrCreateConversationSession retrieves an existing conversation session for a bead,
+// or creates a new one if none exists or the existing one is expired
+func (d *Dispatcher) getOrCreateConversationSession(bead *models.Bead, projectID string) (*models.ConversationContext, error) {
+	if d.db == nil {
+		return nil, nil
+	}
+
+	// Check if bead context has a session_id
+	var sessionID string
+	if bead.Context != nil {
+		sessionID = bead.Context["conversation_session_id"]
+	}
+
+	// Try to load existing session if we have a session ID
+	if sessionID != "" {
+		session, err := d.db.GetConversationContext(sessionID)
+		if err == nil && session != nil {
+			// Check if session is expired
+			if !session.IsExpired() {
+				log.Printf("[Dispatcher] Resuming conversation session %s for bead %s", sessionID, bead.ID)
+				return session, nil
+			}
+			log.Printf("[Dispatcher] Conversation session %s expired, creating new session", sessionID)
+		} else {
+			log.Printf("[Dispatcher] Failed to load conversation session %s: %v", sessionID, err)
+		}
+	}
+
+	// No session or expired/invalid - create new session
+	newSessionID := uuid.New().String()
+	session := models.NewConversationContext(
+		newSessionID,
+		bead.ID,
+		projectID,
+		24*time.Hour, // Default 24h expiration
+	)
+
+	// Store agent/provider info in metadata if available
+	if bead.Context != nil {
+		if agentID := bead.Context["agent_id"]; agentID != "" {
+			session.Metadata["agent_id"] = agentID
+		}
+		if providerID := bead.Context["provider_id"]; providerID != "" {
+			session.Metadata["provider_id"] = providerID
+		}
+	}
+
+	// Save session to database
+	if err := d.db.CreateConversationContext(session); err != nil {
+		return nil, fmt.Errorf("failed to create conversation context: %w", err)
+	}
+
+	// Store session_id in bead context
+	if bead.Context == nil {
+		bead.Context = make(map[string]string)
+	}
+	bead.Context["conversation_session_id"] = newSessionID
+
+	// Update bead with session ID (if beads manager is available)
+	if d.beads != nil {
+		updates := map[string]interface{}{
+			"context": bead.Context,
+		}
+		if err := d.beads.UpdateBead(bead.ID, updates); err != nil {
+			log.Printf("[Dispatcher] Warning: Failed to update bead %s with session ID: %v", bead.ID, err)
+			// Don't fail - session is created, just not stored in bead yet
+		}
+	}
+
+	log.Printf("[Dispatcher] Created new conversation session %s for bead %s", newSessionID, bead.ID)
+	return session, nil
 }
 
 func (d *Dispatcher) providersModel(providerID string) string {
