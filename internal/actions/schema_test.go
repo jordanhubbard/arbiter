@@ -566,3 +566,73 @@ func TestCreatePRActionValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestCodeNavigationActions(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "find_references with symbol",
+			json: `{"actions": [{"type": "find_references", "path": "src/main.go", "symbol": "MyFunction"}]}`,
+			wantErr: false,
+		},
+		{
+			name: "find_references with line and column",
+			json: `{"actions": [{"type": "find_references", "path": "src/main.go", "line": 10, "column": 5}]}`,
+			wantErr: false,
+		},
+		{
+			name: "find_references missing path",
+			json: `{"actions": [{"type": "find_references", "symbol": "MyFunction"}]}`,
+			wantErr: true,
+			errMsg: "requires path",
+		},
+		{
+			name: "find_references missing both symbol and position",
+			json: `{"actions": [{"type": "find_references", "path": "src/main.go"}]}`,
+			wantErr: true,
+			errMsg: "requires either symbol or (line and column)",
+		},
+		{
+			name: "go_to_definition with symbol",
+			json: `{"actions": [{"type": "go_to_definition", "path": "src/main.go", "symbol": "MyType"}]}`,
+			wantErr: false,
+		},
+		{
+			name: "go_to_definition with position",
+			json: `{"actions": [{"type": "go_to_definition", "path": "src/main.go", "line": 20, "column": 10}]}`,
+			wantErr: false,
+		},
+		{
+			name: "find_implementations with symbol",
+			json: `{"actions": [{"type": "find_implementations", "path": "src/interface.go", "symbol": "MyInterface"}]}`,
+			wantErr: false,
+		},
+		{
+			name: "find_implementations with position",
+			json: `{"actions": [{"type": "find_implementations", "path": "src/interface.go", "line": 15, "column": 8}]}`,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env, err := DecodeStrict([]byte(tt.json))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DecodeStrict() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && tt.errMsg != "" {
+				if err == nil || !containsStr(err.Error(), tt.errMsg) {
+					t.Errorf("Expected error containing %q, got %v", tt.errMsg, err)
+				}
+			}
+			if !tt.wantErr && env == nil {
+				t.Error("Expected valid envelope, got nil")
+			}
+		})
+	}
+}

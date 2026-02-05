@@ -94,6 +94,7 @@ type Router struct {
 	Git       GitOperator
 	Logger    ActionLogger
 	Workflow  WorkflowOperator
+	LSP       LSPOperator
 	BeadType  string
 	BeadTags  []string
 	DefaultP0 bool
@@ -595,6 +596,59 @@ func (r *Router) executeAction(ctx context.Context, action Action, actx ActionCo
 			Metadata: map[string]interface{}{
 				"mcp_tool": "mcp__responsible-vibe-mcp__resume_workflow",
 			},
+		}
+	case ActionFindReferences:
+		if r.LSP == nil {
+			return Result{ActionType: action.Type, Status: "error", Message: "LSP operator not configured"}
+		}
+
+		result, err := r.LSP.FindReferences(ctx, action.Path, action.Line, action.Column, action.Symbol)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: err.Error()}
+		}
+
+		return Result{
+			ActionType: action.Type,
+			Status:     "executed",
+			Message:    fmt.Sprintf("Found %v references", result["count"]),
+			Metadata:   result,
+		}
+	case ActionGoToDefinition:
+		if r.LSP == nil {
+			return Result{ActionType: action.Type, Status: "error", Message: "LSP operator not configured"}
+		}
+
+		result, err := r.LSP.GoToDefinition(ctx, action.Path, action.Line, action.Column, action.Symbol)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: err.Error()}
+		}
+
+		message := "Definition not found"
+		if found, ok := result["found"].(bool); ok && found {
+			message = fmt.Sprintf("Definition found at %s:%d:%d", result["file"], result["line"], result["column"])
+		}
+
+		return Result{
+			ActionType: action.Type,
+			Status:     "executed",
+			Message:    message,
+			Metadata:   result,
+		}
+	case ActionFindImplementations:
+		if r.LSP == nil {
+			return Result{ActionType: action.Type, Status: "error", Message: "LSP operator not configured"}
+		}
+
+		result, err := r.LSP.FindImplementations(ctx, action.Path, action.Line, action.Column, action.Symbol)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: err.Error()}
+		}
+
+		return Result{
+			ActionType: action.Type,
+			Status:     "executed",
+			Message:    fmt.Sprintf("Found %v implementations", result["count"]),
+			Metadata:   result,
 		}
 	default:
 		return Result{ActionType: action.Type, Status: "error", Message: "unsupported action"}

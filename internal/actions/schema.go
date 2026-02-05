@@ -36,6 +36,11 @@ const (
 	ActionResumeWorkflow  = "resume_workflow"
 	ActionApproveBead     = "approve_bead"
 	ActionRejectBead      = "reject_bead"
+
+	// Code navigation actions
+	ActionFindReferences     = "find_references"
+	ActionGoToDefinition     = "go_to_definition"
+	ActionFindImplementations = "find_implementations"
 )
 
 type ActionEnvelope struct {
@@ -84,6 +89,12 @@ type Action struct {
 	RequireReviews bool   `json:"require_reviews,omitempty"` // Require reviews before phase transitions
 	TargetPhase    string `json:"target_phase,omitempty"`    // Target phase for proceed_to_phase
 	ReviewState    string `json:"review_state,omitempty"`    // Review state (not-required, pending, performed)
+
+	// Code navigation fields
+	Symbol   string `json:"symbol,omitempty"`    // Symbol name for find_references/go_to_definition
+	Line     int    `json:"line,omitempty"`      // Line number for position-based queries
+	Column   int    `json:"column,omitempty"`    // Column number for position-based queries
+	Language string `json:"language,omitempty"`  // Language hint (go, typescript, python, etc.)
 
 	Bead *BeadPayload `json:"bead,omitempty"`
 
@@ -351,6 +362,27 @@ func validateAction(action Action) error {
 		}
 	case ActionResumeWorkflow:
 		// All fields optional - include_system_prompt
+	case ActionFindReferences:
+		if action.Path == "" {
+			return errors.New("find_references requires path")
+		}
+		if action.Symbol == "" && (action.Line == 0 || action.Column == 0) {
+			return errors.New("find_references requires either symbol or (line and column)")
+		}
+	case ActionGoToDefinition:
+		if action.Path == "" {
+			return errors.New("go_to_definition requires path")
+		}
+		if action.Symbol == "" && (action.Line == 0 || action.Column == 0) {
+			return errors.New("go_to_definition requires either symbol or (line and column)")
+		}
+	case ActionFindImplementations:
+		if action.Path == "" {
+			return errors.New("find_implementations requires path")
+		}
+		if action.Symbol == "" && (action.Line == 0 || action.Column == 0) {
+			return errors.New("find_implementations requires either symbol or (line and column)")
+		}
 	default:
 		return fmt.Errorf("unknown action type: %s", action.Type)
 	}
