@@ -169,7 +169,7 @@ This allows critical auto-filed bugs to be immediately dispatched to technical a
 
 ### Dispatch Hop Limit
 
-To prevent infinite redispatch loops, the dispatcher tracks how many times a bead has been dispatched. If a bead exceeds the configured `max_hops` (default: 5), it is escalated to P0 priority and a CEO decision bead is created:
+To prevent infinite redispatch loops, the dispatcher tracks how many times a bead has been dispatched. If a bead exceeds the configured `max_hops` (default: 20), it is escalated to P0 priority and a CEO decision bead is created. This allows complex bug investigations to proceed through multiple iterations while still catching genuinely stuck work. See [DISPATCH_CONFIG.md](DISPATCH_CONFIG.md) for configuration details:
 
 ```go
 // Check dispatch count and escalate if needed

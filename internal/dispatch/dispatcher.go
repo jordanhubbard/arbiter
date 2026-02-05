@@ -312,7 +312,7 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 
 		maxHops := d.maxDispatchHops
 		if maxHops <= 0 {
-			maxHops = 5
+			maxHops = 20
 		}
 
 		if dispatchCount >= maxHops {

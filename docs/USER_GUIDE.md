@@ -243,10 +243,10 @@ AgentiCorp is configured via `config.yaml`. Key sections include:
 
 ```yaml
 dispatch:
-  max_hops: 5  # Maximum times a bead can be redispatched before escalation
+  max_hops: 20  # Maximum times a bead can be redispatched before escalation
 ```
 
-**Dispatch Hop Limit**: When a bead is dispatched (assigned to an agent) more than `max_hops` times without being closed, it is automatically escalated to P0 priority and a CEO decision bead is created. This prevents infinite redispatch loops and ensures stuck work gets human attention.
+**Dispatch Hop Limit**: When a bead is dispatched (assigned to an agent) more than `max_hops` times without being closed, it is automatically escalated to P0 priority and a CEO decision bead is created. This prevents infinite redispatch loops while allowing complex investigations to proceed (default: 20, previously 5). See [DISPATCH_CONFIG.md](DISPATCH_CONFIG.md) for detailed configuration guidance.
 
 The system automatically enables redispatch for open and in-progress beads, allowing them to be picked up by idle agents. Dispatch history is tracked in the bead's context.
 

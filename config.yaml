@@ -30,7 +30,7 @@ agents:
     - engineering-manager
 
 dispatch:
-  max_hops: 5
+  max_hops: 20
 
 git:
   project_key_dir: ./data/projects

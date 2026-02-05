@@ -83,8 +83,8 @@ curl -X PATCH http://localhost:8080/api/v1/beads/ac-XXX \
 AgentiCorp automatically dispatches open beads to idle agents. The system tracks dispatch history in the bead's context:
 
 - **Auto-redispatch**: Open and in-progress beads are automatically marked for redispatch, allowing them to be picked up by idle agents if work stalls
-- **Dispatch hop limit**: If a bead is dispatched more than `max_hops` times (default: 5) without being closed, it is escalated to **P0 priority** and a **CEO decision bead** is created
-- **Escalation prevents loops**: This ensures stuck or problematic work doesn't cycle indefinitely and gets human attention
+- **Dispatch hop limit**: If a bead is dispatched more than `max_hops` times (default: 20) without being closed, it is escalated to **P0 priority** and a **CEO decision bead** is created
+- **Escalation prevents loops**: This ensures stuck or problematic work doesn't cycle indefinitely and gets human attention, while allowing complex investigations to proceed through multiple iterations
 
 Dispatch history is stored in the bead's `context.dispatch_history` field and includes timestamps, agent IDs, and outcomes.
 

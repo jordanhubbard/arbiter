@@ -31,6 +31,9 @@ agents:
   heartbeat_interval: 30s
   file_lock_timeout: 10m
 
+dispatch:
+  max_hops: 20  # Maximum times a bead can be redispatched before escalation
+
 security:
   enable_auth: true
   pki_enabled: false  # Will be enabled when certificates are provided

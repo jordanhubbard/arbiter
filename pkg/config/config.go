@@ -241,7 +241,7 @@ func DefaultConfig() *Config {
 			Mode: "block",
 		},
 		Dispatch: DispatchConfig{
-			MaxHops: 5,
+			MaxHops: 20,
 		},
 		Git: GitConfig{
 			ProjectKeyDir: "/app/data/projects",
