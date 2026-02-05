@@ -97,6 +97,7 @@ func (s *Server) handleResetConversation(w http.ResponseWriter, r *http.Request,
 	if r.Body != nil {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			// Ignore decode errors - use defaults
+			_ = err
 		}
 	}
 

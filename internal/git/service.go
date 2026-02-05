@@ -747,6 +747,6 @@ func extractPRNumber(url string) int {
 		return 0
 	}
 	var num int
-	fmt.Sscanf(matches[1], "%d", &num)
+	_, _ = fmt.Sscanf(matches[1], "%d", &num)
 	return num
 }
