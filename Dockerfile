@@ -14,8 +14,11 @@ COPY go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Install bd CLI for bead operations
-RUN CGO_ENABLED=1 go install github.com/steveyegge/beads/cmd/bd@latest
+# Install bd CLI for bead operations (build from source due to replace directives)
+RUN git clone --depth 1 https://github.com/steveyegge/beads.git /tmp/beads && \
+    cd /tmp/beads && \
+    CGO_ENABLED=1 go build -o /go/bin/bd ./cmd/bd && \
+    rm -rf /tmp/beads
 
 # Copy source code
 COPY . .
