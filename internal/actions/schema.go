@@ -65,6 +65,9 @@ const (
 	ActionAddPRComment    = "add_pr_comment"
 	ActionSubmitReview    = "submit_review"
 	ActionRequestReview   = "request_review"
+
+	// Agent communication actions
+	ActionSendAgentMessage = "send_agent_message"
 )
 
 type ActionEnvelope struct {
@@ -150,6 +153,14 @@ type Action struct {
 	CommentSide    string   `json:"comment_side,omitempty"`     // Side for inline comment (LEFT, RIGHT)
 	ReviewEvent    string   `json:"review_event,omitempty"`     // Review event (APPROVE, REQUEST_CHANGES, COMMENT)
 	Reviewer       string   `json:"reviewer,omitempty"`         // Reviewer for request_review
+
+	// Agent communication fields
+	ToAgentID      string                 `json:"to_agent_id,omitempty"`      // Target agent ID for send_agent_message
+	ToAgentRole    string                 `json:"to_agent_role,omitempty"`    // Target agent role (alternative to ID)
+	MessageType    string                 `json:"message_type,omitempty"`     // Message type (question, delegation, notification)
+	MessageSubject string                 `json:"message_subject,omitempty"`  // Message subject
+	MessageBody    string                 `json:"message_body,omitempty"`     // Message body
+	MessagePayload map[string]interface{} `json:"message_payload,omitempty"`  // Optional message payload/context
 
 	Bead *BeadPayload `json:"bead,omitempty"`
 

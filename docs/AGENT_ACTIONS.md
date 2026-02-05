@@ -637,6 +637,80 @@ Ask the user a follow-up question.
 
 **Note:** This creates a bead with the question for the user to answer.
 
+#### send_agent_message
+
+Send a message to another agent for collaboration, delegation, or notification.
+
+```json
+{
+  "type": "send_agent_message",
+  "to_agent_id": "agent-qa-engineer-1",
+  "message_type": "question",
+  "message_subject": "Test coverage check",
+  "message_body": "Can you verify test coverage for the auth module is above 80%?",
+  "message_payload": {
+    "module": "auth",
+    "files": ["src/auth.go", "src/auth_test.go"]
+  }
+}
+```
+
+**Fields:**
+- `to_agent_id` (optional): Target agent ID (use this OR `to_agent_role`)
+- `to_agent_role` (optional): Target agent role/persona (e.g., "qa-engineer", "code-reviewer")
+- `message_type` (required): One of: `"question"`, `"delegation"`, `"notification"`
+  - `question`: Ask another agent for information
+  - `delegation`: Request another agent to perform a task
+  - `notification`: Inform another agent of an event
+- `message_subject` (optional): Brief subject line
+- `message_body` (optional): Detailed message content
+- `message_payload` (optional): Additional context or data
+
+**Returns:**
+- `message_id`: Unique message identifier
+- `to_agent_id`: Resolved target agent ID
+- `message_type`: Message type sent
+- `message_subject`: Message subject
+
+**Examples:**
+
+Delegate task to QA agent:
+```json
+{
+  "type": "send_agent_message",
+  "to_agent_role": "qa-engineer",
+  "message_type": "delegation",
+  "message_subject": "Run integration tests",
+  "message_body": "Please run full integration test suite for the authentication module",
+  "message_payload": {
+    "test_pattern": "TestAuth*",
+    "bead_id": "bead-abc-123"
+  }
+}
+```
+
+Ask code reviewer for feedback:
+```json
+{
+  "type": "send_agent_message",
+  "to_agent_role": "code-reviewer",
+  "message_type": "question",
+  "message_subject": "API design review",
+  "message_body": "Does this API design follow our best practices?"
+}
+```
+
+Notify project manager of completion:
+```json
+{
+  "type": "send_agent_message",
+  "to_agent_id": "agent-pm-1",
+  "message_type": "notification",
+  "message_subject": "Feature complete",
+  "message_body": "Authentication feature is complete and all tests pass"
+}
+```
+
 ## Action Results
 
 All actions return a result with this structure:

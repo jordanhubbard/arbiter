@@ -74,6 +74,11 @@ type WorkflowOperator interface {
 	ResumeWorkflow(ctx context.Context, includeSystemPrompt bool) (map[string]interface{}, error)
 }
 
+type MessageSender interface {
+	SendMessage(ctx context.Context, fromAgentID, toAgentID, messageType, subject, body string, payload map[string]interface{}) (string, error)
+	FindAgentByRole(ctx context.Context, role string) (string, error)
+}
+
 type ActionContext struct {
 	AgentID   string
 	BeadID    string
@@ -88,20 +93,21 @@ type Result struct {
 }
 
 type Router struct {
-	Beads     BeadCreator
-	Closer    BeadCloser
-	Escalator BeadEscalator
-	Commands  CommandExecutor
-	Tests     TestRunner
-	Linter    LinterRunner
-	Builder   BuildRunner
-	Files     FileManager
-	Git       GitOperator
-	Logger    ActionLogger
-	Workflow  WorkflowOperator
-	LSP       LSPOperator
-	BeadType  string
-	BeadTags  []string
+	Beads        BeadCreator
+	Closer       BeadCloser
+	Escalator    BeadEscalator
+	Commands     CommandExecutor
+	Tests        TestRunner
+	Linter       LinterRunner
+	Builder      BuildRunner
+	Files        FileManager
+	Git          GitOperator
+	Logger       ActionLogger
+	Workflow     WorkflowOperator
+	LSP          LSPOperator
+	MessageBus   MessageSender
+	BeadType     string
+	BeadTags     []string
 	DefaultP0 bool
 }
 
@@ -792,6 +798,8 @@ func (r *Router) executeAction(ctx context.Context, action Action, actx ActionCo
 		return r.handleSubmitReview(ctx, action, actx)
 	case ActionRequestReview:
 		return r.handleRequestReview(ctx, action, actx)
+	case ActionSendAgentMessage:
+		return r.handleSendAgentMessage(ctx, action, actx)
 
 	default:
 		return Result{ActionType: action.Type, Status: "error", Message: "unsupported action"}
@@ -1070,6 +1078,73 @@ func (r *Router) handleRequestReview(ctx context.Context, action Action, actx Ac
 		Metadata: map[string]interface{}{
 			"pr_number": action.PRNumber,
 			"reviewer":  action.Reviewer,
+		},
+	}
+}
+
+func (r *Router) handleSendAgentMessage(ctx context.Context, action Action, actx ActionContext) Result {
+	// Validate required fields
+	if action.ToAgentID == "" && action.ToAgentRole == "" {
+		return Result{ActionType: action.Type, Status: "error", Message: "either to_agent_id or to_agent_role is required"}
+	}
+
+	if action.MessageType == "" {
+		return Result{ActionType: action.Type, Status: "error", Message: "message_type is required (question, delegation, notification)"}
+	}
+
+	// Validate message type
+	validMessageTypes := map[string]bool{
+		"question":     true,
+		"delegation":   true,
+		"notification": true,
+	}
+	if !validMessageTypes[action.MessageType] {
+		return Result{ActionType: action.Type, Status: "error", Message: "message_type must be one of: question, delegation, notification"}
+	}
+
+	if r.MessageBus == nil {
+		return Result{ActionType: action.Type, Status: "error", Message: "message bus not configured"}
+	}
+
+	// Resolve target agent ID if role provided
+	targetAgentID := action.ToAgentID
+	if targetAgentID == "" && action.ToAgentRole != "" {
+		agentID, err := r.MessageBus.FindAgentByRole(ctx, action.ToAgentRole)
+		if err != nil {
+			return Result{ActionType: action.Type, Status: "error", Message: fmt.Sprintf("failed to find agent with role %s: %v", action.ToAgentRole, err)}
+		}
+		targetAgentID = agentID
+	}
+
+	// Send the message
+	messageID, err := r.MessageBus.SendMessage(
+		ctx,
+		actx.AgentID,
+		targetAgentID,
+		action.MessageType,
+		action.MessageSubject,
+		action.MessageBody,
+		action.MessagePayload,
+	)
+	if err != nil {
+		return Result{ActionType: action.Type, Status: "error", Message: fmt.Sprintf("failed to send message: %v", err)}
+	}
+
+	// Build result message
+	resultMessage := fmt.Sprintf("Sent %s message to agent %s", action.MessageType, targetAgentID)
+	if action.MessageSubject != "" {
+		resultMessage = fmt.Sprintf("Sent %s message to agent %s: %s", action.MessageType, targetAgentID, action.MessageSubject)
+	}
+
+	return Result{
+		ActionType: action.Type,
+		Status:     "executed",
+		Message:    resultMessage,
+		Metadata: map[string]interface{}{
+			"message_id":      messageID,
+			"to_agent_id":     targetAgentID,
+			"message_type":    action.MessageType,
+			"message_subject": action.MessageSubject,
 		},
 	}
 }
