@@ -1,8 +1,64 @@
 # Loom
 
-An agentic-based coding orchestrator for both on-prem and off-prem development.
+> *"From a single thread of an idea, we weave complete software."*
+
+**Autonomous AI Agent Orchestration Platform**
+
+## The Story of Loom
+
+For thousands of years, master weavers have transformed simple threads into magnificent tapestries. They didn't work alone—apprentices prepared threads, dyers created colors, designers planned patterns. Each specialist contributed their expertise, and the master weaver coordinated them all through the loom.
+
+Software development follows the same ancient pattern. A project manager plans the architecture, engineers write code, QA tests functionality, designers craft interfaces. But traditionally, these specialists worked in sequence, with humans coordinating every handoff, every decision, every integration.
+
+**Loom changes this.**
+
+Just as a master weaver operates a loom to coordinate multiple threads into unified fabric, Loom orchestrates multiple AI agents—each with specialized expertise—to weave complete software from a simple Product Requirements Document (PRD). You provide the thread of an idea. Loom weaves it into reality.
+
+Give Loom a PRD, and watch as:
+- A **Project Manager** expands your requirements with best practices
+- An **Engineering Manager** builds the core architecture
+- **QA Engineers** write comprehensive tests
+- **DevOps Engineers** configure infrastructure
+- **Designers** craft the user interface
+- A **Code Reviewer** ensures quality throughout
+
+All working autonomously, in parallel, coordinated by Loom's workflow engine. From PRD to working MVP in hours, not weeks.
+
+This is the craft of software, elevated by the ancient wisdom of the loom.
+
+---
+
+## What is Loom?
 
 Loom is a lightweight AI coding agent orchestration system that manages workflows, handles agent lifecycle, and provides real-time event streaming for monitoring and coordination.
+
+**Core Capabilities:**
+
+- **🚀 Project Bootstrap**: Create complete projects from a PRD
+  - Autonomous PRD expansion with best practices
+  - Automatic epic and story breakdown
+  - Agent work assignment and orchestration
+  - CEO review and approval workflows
+
+- **🤖 Multi-Agent Orchestration**: Specialized AI agents working in harmony
+  - Project Managers, Engineers, QA, DevOps, Designers
+  - Parallel task execution with dependency management
+  - Autonomous decision-making within defined guardrails
+
+- **🔄 Workflow Engine**: Temporal-based reliable execution
+  - Durable workflows that survive failures
+  - Complex multi-step processes
+  - Human-in-the-loop approval gates
+
+- **📊 Git-Backed Issue Tracking**: Beads system for persistent work tracking
+  - Issues survive context compaction
+  - Dependency tracking (blockers, blocked-by)
+  - Cross-session context recovery
+
+- **🎯 Intelligent Routing**: Smart work assignment
+  - Role-based bead matching
+  - Workflow-based task progression
+  - Priority and tag-based filtering
 
 ## Documentation
 
