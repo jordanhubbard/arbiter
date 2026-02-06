@@ -192,7 +192,7 @@ func (s *Server) checkDependencies(ctx context.Context) map[string]DepHealth {
 
 // checkDatabase checks database connectivity.
 func (s *Server) checkDatabase(ctx context.Context) DepHealth {
-	if s.agenticorp == nil || s.agenticorp.GetDatabase() == nil {
+	if s.app == nil || s.app.GetDatabase() == nil {
 		return DepHealth{
 			Status:  "unknown",
 			Message: "database not configured",
@@ -200,7 +200,7 @@ func (s *Server) checkDatabase(ctx context.Context) DepHealth {
 	}
 
 	start := time.Now()
-	db := s.agenticorp.GetDatabase().DB()
+	db := s.app.GetDatabase().DB()
 
 	if err := db.PingContext(ctx); err != nil {
 		return DepHealth{
@@ -211,8 +211,8 @@ func (s *Server) checkDatabase(ctx context.Context) DepHealth {
 	}
 
 	// Check if we can get active instances (for distributed deployments)
-	if s.agenticorp.GetDatabase().SupportsHA() {
-		_, err := s.agenticorp.GetDatabase().ListActiveInstances(ctx)
+	if s.app.GetDatabase().SupportsHA() {
+		_, err := s.app.GetDatabase().ListActiveInstances(ctx)
 		if err != nil {
 			return DepHealth{
 				Status:  "degraded",
@@ -257,7 +257,7 @@ func (s *Server) checkCache(ctx context.Context) DepHealth {
 
 // checkProviders checks provider registry health.
 func (s *Server) checkProviders(ctx context.Context) DepHealth {
-	if s.agenticorp == nil {
+	if s.app == nil {
 		return DepHealth{
 			Status:  "unknown",
 			Message: "not initialized",

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { AgentiCorpClient, Message } from './client';
+import { LoomClient, Message } from './client';
 
 export class ChatPanelProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
@@ -7,7 +7,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
-        private readonly _client: AgentiCorpClient
+        private readonly _client: LoomClient
     ) {}
 
     public resolveWebviewView(
@@ -41,7 +41,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         let message = question;
         
         if (codeContext) {
-            const config = vscode.workspace.getConfiguration('agenticorp');
+            const config = vscode.workspace.getConfiguration('loom');
             const autoContext = config.get('autoContext', true);
             
             if (autoContext) {
@@ -68,7 +68,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
             // Show loading indicator
             this._view?.webview.postMessage({ type: 'showLoading' });
 
-            // Get response from AgentiCorp
+            // Get response from Loom
             const response = await this._client.sendMessage(this._conversationHistory);
 
             if (response.choices && response.choices.length > 0) {
@@ -83,10 +83,10 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
                     message: assistantMessage.content
                 });
             } else {
-                throw new Error('No response from AgentiCorp');
+                throw new Error('No response from Loom');
             }
         } catch (error: any) {
-            vscode.window.showErrorMessage(`AgentiCorp error: ${error.message}`);
+            vscode.window.showErrorMessage(`Loom error: ${error.message}`);
             this._view?.webview.postMessage({
                 type: 'showError',
                 message: error.message
@@ -102,7 +102,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgentiCorp Chat</title>
+    <title>Loom Chat</title>
     <style>
         body {
             padding: 10px;
@@ -203,7 +203,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         <div id="messages"></div>
         <div class="loading" id="loading">Thinking...</div>
         <div id="input-container">
-            <textarea id="message-input" rows="3" placeholder="Ask AgentiCorp anything..."></textarea>
+            <textarea id="message-input" rows="3" placeholder="Ask Loom anything..."></textarea>
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <button id="send-btn">Send</button>
                 <button id="clear-btn">Clear</button>
@@ -225,7 +225,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
             
             const roleDiv = document.createElement('div');
             roleDiv.className = 'message-role';
-            roleDiv.textContent = isError ? 'Error' : (role === 'user' ? 'You' : 'AgentiCorp');
+            roleDiv.textContent = isError ? 'Error' : (role === 'user' ? 'You' : 'Loom');
             
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';

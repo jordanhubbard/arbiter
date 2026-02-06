@@ -17,7 +17,7 @@ func NewLoomActivities(db *database.Database) *LoomActivities {
 
 // LoomHeartbeatActivity is the master clock activity
 // It runs on every heartbeat to check if we should dispatch work or run idle tasks
-func (a *LoomActivities) AgentiCorpHeartbeatActivity(ctx context.Context, beatCount int) error {
+func (a *LoomActivities) LoomHeartbeatActivity(ctx context.Context, beatCount int) error {
 	// This is a placeholder activity that just logs the heartbeat
 	// The real work dispatch happens via the dispatcher workflow
 	// which is triggered separately during initialization

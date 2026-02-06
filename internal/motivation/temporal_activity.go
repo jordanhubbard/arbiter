@@ -19,7 +19,7 @@ type MotivationActivityResult struct {
 }
 
 // MotivationActivity is a Temporal activity that evaluates motivations
-// This should be called by the AgentiCorpHeartbeatWorkflow
+// This should be called by the LoomHeartbeatWorkflow
 type MotivationActivity struct {
 	engine *Engine
 }
@@ -79,15 +79,15 @@ type MotivationWorkflowInput struct {
 }
 
 // Integration point: Register the activity with Temporal worker
-// This should be called during AgentiCorp initialization:
+// This should be called during Loom initialization:
 //
-// Example usage in agenticorp.go or temporal/manager.go:
+// Example usage in loom.go or temporal/manager.go:
 //
 //   motivationEngine := motivation.NewEngine(registry, stateProvider, actionHandler)
 //   motivationActivity := motivation.NewMotivationActivity(motivationEngine)
 //   worker.RegisterActivity(motivationActivity.EvaluateMotivations)
 //
-// Then in AgentiCorpHeartbeatWorkflow, call the activity:
+// Then in LoomHeartbeatWorkflow, call the activity:
 //
 //   var result motivation.MotivationActivityResult
 //   err := workflow.ExecuteActivity(ctx, "EvaluateMotivationsActivity",

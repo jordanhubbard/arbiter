@@ -29,7 +29,7 @@ func (s *Server) handleSelectProvider(w http.ResponseWriter, r *http.Request) {
 		req.Policy = "balanced"
 	}
 
-	provider, err := s.agenticorp.SelectProvider(r.Context(), req.Requirements, req.Policy)
+	provider, err := s.app.SelectProvider(r.Context(), req.Requirements, req.Policy)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

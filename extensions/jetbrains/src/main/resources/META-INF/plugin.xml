@@ -1,10 +1,10 @@
 <idea-plugin>
-    <id>com.agenticorp.intellij</id>
-    <name>AgentiCorp</name>
-    <vendor email="support@agenticorp.io" url="https://github.com/jordanhubbard/AgentiCorp">AgentiCorp</vendor>
+    <id>com.loom.intellij</id>
+    <name>Loom</name>
+    <vendor email="support@loom.io" url="https://github.com/jordanhubbard/Loom">Loom</vendor>
 
     <description><![CDATA[
-    AI-powered coding assistant integrated with AgentiCorp.
+    AI-powered coding assistant integrated with Loom.
     
     Features:
     - AI chat tool window
@@ -19,29 +19,29 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Tool Window -->
-        <toolWindow id="AgentiCorp" secondary="true" icon="/icons/agenticorp.svg" anchor="right"
-                    factoryClass="com.agenticorp.intellij.ui.ChatToolWindowFactory"/>
+        <toolWindow id="Loom" secondary="true" icon="/icons/loom.svg" anchor="right"
+                    factoryClass="com.loom.intellij.ui.ChatToolWindowFactory"/>
 
         <!-- Settings -->
-        <applicationConfigurable parentId="tools" instance="com.agenticorp.intellij.settings.AgentiCorpSettings"
-                                 id="com.agenticorp.intellij.settings.AgentiCorpSettings"
-                                 displayName="AgentiCorp"/>
-        <applicationService serviceImplementation="com.agenticorp.intellij.settings.AgentiCorpSettingsState"/>
+        <applicationConfigurable parentId="tools" instance="com.loom.intellij.settings.LoomSettings"
+                                 id="com.loom.intellij.settings.LoomSettings"
+                                 displayName="Loom"/>
+        <applicationService serviceImplementation="com.loom.intellij.settings.LoomSettingsState"/>
 
         <!-- Completion Provider -->
-        <completion.contributor language="any" implementationClass="com.agenticorp.intellij.completion.AgentiCorpCompletionContributor"/>
+        <completion.contributor language="any" implementationClass="com.loom.intellij.completion.LoomCompletionContributor"/>
     </extensions>
 
     <actions>
-        <group id="AgentiCorp.EditorPopupMenu" text="AgentiCorp" popup="true">
+        <group id="Loom.EditorPopupMenu" text="Loom" popup="true">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <action id="AgentiCorp.ExplainCode" class="com.agenticorp.intellij.actions.ExplainCodeAction"
-                    text="Explain Code" description="Explain selected code with AgentiCorp"/>
-            <action id="AgentiCorp.GenerateTests" class="com.agenticorp.intellij.actions.GenerateTestsAction"
+            <action id="Loom.ExplainCode" class="com.loom.intellij.actions.ExplainCodeAction"
+                    text="Explain Code" description="Explain selected code with Loom"/>
+            <action id="Loom.GenerateTests" class="com.loom.intellij.actions.GenerateTestsAction"
                     text="Generate Tests" description="Generate unit tests"/>
-            <action id="AgentiCorp.RefactorCode" class="com.agenticorp.intellij.actions.RefactorCodeAction"
+            <action id="Loom.RefactorCode" class="com.loom.intellij.actions.RefactorCodeAction"
                     text="Refactor" description="Suggest refactorings"/>
-            <action id="AgentiCorp.FixBug" class="com.agenticorp.intellij.actions.FixBugAction"
+            <action id="Loom.FixBug" class="com.loom.intellij.actions.FixBugAction"
                     text="Help Fix Bug" description="Get help fixing a bug"/>
         </group>
     </actions>

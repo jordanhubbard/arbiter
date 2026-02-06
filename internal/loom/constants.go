@@ -1,6 +1,6 @@
 package loom
 
 const (
-	configKVKey     = "agenticorp.config.json"
-	modelCatalogKey = "agenticorp.model_catalog.json"
+	configKVKey     = "loom.config.json"
+	modelCatalogKey = "loom.model_catalog.json"
 )

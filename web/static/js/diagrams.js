@@ -1,5 +1,5 @@
 /**
- * AgentiCorp Workflow Diagrams
+ * Loom Workflow Diagrams
  *
  * Interactive diagram views using Cytoscape.js:
  * - Project Hierarchy: Projects → Agents → Beads
@@ -119,7 +119,7 @@ class DiagramManager {
 
         // Download the PNG
         const link = document.createElement('a');
-        link.download = `agenticorp-${this.type}-diagram.png`;
+        link.download = `loom-${this.type}-diagram.png`;
         link.href = png;
         link.click();
     }
@@ -146,7 +146,7 @@ class DiagramManager {
         const blob = new Blob([svg], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `agenticorp-${this.type}-diagram.svg`;
+        link.download = `loom-${this.type}-diagram.svg`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);

@@ -501,8 +501,8 @@ func (m *Manager) GetCurrentCommit(workDir string) (string, error) {
 // GetProjectWorkDir returns the work directory path for a project
 func (m *Manager) GetProjectWorkDir(projectID string) string {
 	// Always use baseWorkDir/projectID for cloned projects
-	// The special case for agenticorp-self was removed because in Docker,
-	// the repo is cloned separately to baseWorkDir/agenticorp-self even though
+	// The special case for loom-self was removed because in Docker,
+	// the repo is cloned separately to baseWorkDir/loom-self even though
 	// baseWorkDir/.git may exist from the image build.
 	return filepath.Join(m.baseWorkDir, projectID)
 }
@@ -555,7 +555,7 @@ func (m *Manager) configureAuth(cmd *exec.Cmd, project *models.Project) error {
 		escapedKeyPath := shellEscape(sshKeyPath)
 		cmd.Env = append(cmd.Env,
 			"GIT_TERMINAL_PROMPT=0",
-			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes -o UserKnownHostsFile=/home/agenticorp/.ssh/known_hosts", escapedKeyPath),
+			fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -o IdentitiesOnly=yes -o UserKnownHostsFile=/home/loom/.ssh/known_hosts", escapedKeyPath),
 		)
 		return nil
 

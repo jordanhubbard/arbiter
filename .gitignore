@@ -9,7 +9,7 @@
 *.dylib
 bin/
 obj/
-/agenticorp
+/loom
 
 # Test binary, built with `go test -c`
 *.test
@@ -41,5 +41,5 @@ arbiter-*
 
 # Web UI build artifacts
 web/dist/
-agenticorp-self/
+loom-self/
 .keys.json

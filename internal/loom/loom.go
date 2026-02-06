@@ -310,7 +310,7 @@ func (a *Loom) setupProviderMetrics() {
 	})
 }
 
-// Initialize sets up the agenticorp
+// Initialize sets up loom
 func (a *Loom) Initialize(ctx context.Context) error {
 	// Prefer database-backed configuration when available.
 	var projects []*models.Project
@@ -677,7 +677,7 @@ func (a *Loom) Initialize(ctx context.Context) error {
 		}
 
 		// Start the master heartbeat (10 second interval) - timing/coordination
-		_ = a.temporalManager.StartAgentiCorpHeartbeatWorkflow(ctx, 10*time.Second)
+		_ = a.temporalManager.StartLoomHeartbeatWorkflow(ctx, 10*time.Second)
 		// Start the dispatcher (triggers work distribution)
 		_ = a.temporalManager.StartDispatcherWorkflow(ctx, "", 5*time.Second)
 		// Start provider heartbeats (monitor provider health)
@@ -772,7 +772,7 @@ func (a *Loom) Initialize(ctx context.Context) error {
 }
 
 // kickstartOpenBeads starts Temporal workflows for all open beads in registered projects.
-// This ensures that when AgentiCorp starts (or restarts), all pending work is queued for processing.
+// This ensures that when Loom starts (or restarts), all pending work is queued for processing.
 func (a *Loom) kickstartOpenBeads(ctx context.Context) {
 	projects := a.projectManager.ListProjects()
 	if len(projects) == 0 {
@@ -831,7 +831,7 @@ func (a *Loom) kickstartOpenBeads(ctx context.Context) {
 	}
 }
 
-// Shutdown gracefully shuts down the agenticorp
+// Shutdown gracefully shuts down loom
 func (a *Loom) Shutdown() {
 	a.agentManager.StopAll()
 	if a.temporalManager != nil {
@@ -1879,7 +1879,7 @@ func (a *Loom) RunReplQuery(ctx context.Context, message string) (*ReplResult, e
 		beadTitle = fmt.Sprintf("CEO: %s", cleanMessage)
 	}
 
-	bead, err := a.beadsManager.CreateBead(beadTitle, cleanMessage, models.BeadPriorityP0, "task", "agenticorp-self")
+	bead, err := a.beadsManager.CreateBead(beadTitle, cleanMessage, models.BeadPriorityP0, "task", "loom-self")
 	if err != nil {
 		// If bead creation fails, continue anyway but log it
 		log.Printf("Warning: Failed to create CEO query bead: %v", err)
@@ -1911,7 +1911,7 @@ func (a *Loom) RunReplQuery(ctx context.Context, message string) (*ReplResult, e
 		return nil, err
 	}
 
-	systemPrompt := a.buildAgentiCorpPersonaPrompt()
+	systemPrompt := a.buildLoomPersonaPrompt()
 	input := workflows.ProviderQueryWorkflowInput{
 		ProviderID:   providerRecord.ID,
 		SystemPrompt: systemPrompt,
@@ -1941,7 +1941,7 @@ func (a *Loom) RunReplQuery(ctx context.Context, message string) (*ReplResult, e
 		actx := actions.ActionContext{
 			AgentID:   "ceo",
 			BeadID:    beadID,
-			ProjectID: "agenticorp-self",
+			ProjectID: "loom-self",
 		}
 		env, parseErr := actions.DecodeLenient([]byte(result.Response))
 		if parseErr != nil {
@@ -2044,17 +2044,17 @@ func (a *Loom) SelectProvider(ctx context.Context, requirements *routing.Provide
 	return router.SelectProvider(ctx, providers, requirements)
 }
 
-func (a *Loom) buildAgentiCorpPersonaPrompt() string {
+func (a *Loom) buildLoomPersonaPrompt() string {
 	persona, err := a.personaManager.LoadPersona("loom")
 	if err != nil {
-		return fmt.Sprintf("You are AgentiCorp, the orchestration system. Respond to the CEO with clear guidance and actionable next steps.\n\n%s", actions.ActionPrompt)
+		return fmt.Sprintf("You are Loom, the orchestration system. Respond to the CEO with clear guidance and actionable next steps.\n\n%s", actions.ActionPrompt)
 	}
 
 	focus := strings.Join(persona.FocusAreas, ", ")
 	standards := strings.Join(persona.Standards, "; ")
 
 	return fmt.Sprintf(
-		"You are AgentiCorp, the orchestration system. Treat this as a high-priority CEO request.\n\nMission: %s\nCharacter: %s\nTone: %s\nFocus Areas: %s\nDecision Making: %s\nStandards: %s\n\n%s",
+		"You are Loom, the orchestration system. Treat this as a high-priority CEO request.\n\nMission: %s\nCharacter: %s\nTone: %s\nFocus Areas: %s\nDecision Making: %s\nStandards: %s\n\n%s",
 		strings.TrimSpace(persona.Mission),
 		strings.TrimSpace(persona.Character),
 		strings.TrimSpace(persona.Tone),
@@ -2323,7 +2323,7 @@ func (a *Loom) createApplyFixBead(approvalBead *models.Bead, closeReason string)
 
 	projectID := approvalBead.ProjectID
 	if projectID == "" {
-		projectID = "agenticorp-self"
+		projectID = "loom-self"
 	}
 
 	// Create apply-fix bead

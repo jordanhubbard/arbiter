@@ -20,7 +20,7 @@ func (s *Server) handleGitSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get project
-	project, err := s.agenticorp.GetProjectManager().GetProject(projectID)
+	project, err := s.app.GetProjectManager().GetProject(projectID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Project not found: %v", err), http.StatusNotFound)
 		return
@@ -32,14 +32,14 @@ func (s *Server) handleGitSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pull latest changes
-	gitops := s.agenticorp.GetGitopsManager()
+	gitops := s.app.GetGitopsManager()
 	if err := gitops.PullProject(r.Context(), project); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to pull: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Update project in database
-	if err := s.agenticorp.GetProjectManager().UpdateProject(projectID, map[string]interface{}{
+	if err := s.app.GetProjectManager().UpdateProject(projectID, map[string]interface{}{
 		"work_dir":         project.WorkDir,
 		"last_sync_at":     project.LastSyncAt,
 		"last_commit_hash": project.LastCommitHash,
@@ -88,7 +88,7 @@ func (s *Server) handleGitCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get project
-	project, err := s.agenticorp.GetProjectManager().GetProject(projectID)
+	project, err := s.app.GetProjectManager().GetProject(projectID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Project not found: %v", err), http.StatusNotFound)
 		return
@@ -100,14 +100,14 @@ func (s *Server) handleGitCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Commit changes
-	gitops := s.agenticorp.GetGitopsManager()
+	gitops := s.app.GetGitopsManager()
 	if err := gitops.CommitChanges(r.Context(), project, req.Message, req.AuthorName, req.AuthorEmail); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to commit: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Update project in database
-	if err := s.agenticorp.GetProjectManager().UpdateProject(projectID, map[string]interface{}{
+	if err := s.app.GetProjectManager().UpdateProject(projectID, map[string]interface{}{
 		"last_commit_hash": project.LastCommitHash,
 	}); err != nil {
 		// Log but don't fail
@@ -138,7 +138,7 @@ func (s *Server) handleGitPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get project
-	project, err := s.agenticorp.GetProjectManager().GetProject(projectID)
+	project, err := s.app.GetProjectManager().GetProject(projectID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Project not found: %v", err), http.StatusNotFound)
 		return
@@ -150,7 +150,7 @@ func (s *Server) handleGitPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Push changes
-	gitops := s.agenticorp.GetGitopsManager()
+	gitops := s.app.GetGitopsManager()
 	if err := gitops.PushChanges(r.Context(), project); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to push: %v", err), http.StatusInternalServerError)
 		return
@@ -179,7 +179,7 @@ func (s *Server) handleGitStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get project
-	project, err := s.agenticorp.GetProjectManager().GetProject(projectID)
+	project, err := s.app.GetProjectManager().GetProject(projectID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Project not found: %v", err), http.StatusNotFound)
 		return
@@ -197,7 +197,7 @@ func (s *Server) handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gitops := s.agenticorp.GetGitopsManager()
+	gitops := s.app.GetGitopsManager()
 	workDir := gitops.GetProjectWorkDir(projectID)
 
 	// Get current commit hash

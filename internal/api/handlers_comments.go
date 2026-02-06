@@ -11,7 +11,7 @@ import (
 // GET /api/v1/beads/{id}/comments - Get all comments
 // POST /api/v1/beads/{id}/comments - Create comment
 func (s *Server) handleBeadComments(w http.ResponseWriter, r *http.Request) {
-	commentsMgr := s.agenticorp.GetCommentsManager()
+	commentsMgr := s.app.GetCommentsManager()
 	if commentsMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Comments manager not available")
 		return
@@ -111,7 +111,7 @@ func (s *Server) handleCreateComment(w http.ResponseWriter, r *http.Request, bea
 // PATCH /api/v1/comments/{id} - Update comment
 // DELETE /api/v1/comments/{id} - Delete comment
 func (s *Server) handleComment(w http.ResponseWriter, r *http.Request) {
-	commentsMgr := s.agenticorp.GetCommentsManager()
+	commentsMgr := s.app.GetCommentsManager()
 	if commentsMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Comments manager not available")
 		return

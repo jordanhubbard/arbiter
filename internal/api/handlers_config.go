@@ -13,7 +13,7 @@ import (
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		snap, err := s.agenticorp.GetConfigSnapshot(context.Background())
+		snap, err := s.app.GetConfigSnapshot(context.Background())
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -26,11 +26,11 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 			s.respondError(w, http.StatusBadRequest, "Invalid request body")
 			return
 		}
-		if err := s.agenticorp.ApplyConfigSnapshot(context.Background(), &snap); err != nil {
+		if err := s.app.ApplyConfigSnapshot(context.Background(), &snap); err != nil {
 			s.respondError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		if eb := s.agenticorp.GetEventBus(); eb != nil {
+		if eb := s.app.GetEventBus(); eb != nil {
 			_ = eb.Publish(&eventbus.Event{Type: eventbus.EventTypeConfigUpdated, Source: "config-api", Data: map[string]interface{}{}})
 		}
 		s.respondJSON(w, http.StatusOK, &snap)
@@ -47,7 +47,7 @@ func (s *Server) handleConfigExportYAML(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	data, err := s.agenticorp.ExportConfigSnapshotYAML(context.Background())
+	data, err := s.app.ExportConfigSnapshotYAML(context.Background())
 	if err != nil {
 		s.respondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -71,13 +71,13 @@ func (s *Server) handleConfigImportYAML(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	snap, err := s.agenticorp.ImportConfigSnapshotYAML(context.Background(), body)
+	snap, err := s.app.ImportConfigSnapshotYAML(context.Background(), body)
 	if err != nil {
 		s.respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if eb := s.agenticorp.GetEventBus(); eb != nil {
+	if eb := s.app.GetEventBus(); eb != nil {
 		_ = eb.Publish(&eventbus.Event{Type: eventbus.EventTypeConfigUpdated, Source: "config-api", Data: map[string]interface{}{}})
 	}
 

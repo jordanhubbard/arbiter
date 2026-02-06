@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: AgentiCorp API
+  title: Loom API
   description: |
-    The AgentiCorp API provides programmatic access to the agent orchestration system.
+    The Loom API provides programmatic access to the agent orchestration system.
     
     ## Authentication
     
@@ -16,8 +16,8 @@ info:
     
   version: 1.0.0
   contact:
-    name: AgentiCorp Support
-    url: https://github.com/jordanhubbard/agenticorp
+    name: Loom Support
+    url: https://github.com/jordanhubbard/loom
 
 servers:
   - url: https://localhost:8443

@@ -25,7 +25,7 @@ type Manager struct {
 	beadFiles       map[string]string
 	workGraph       *models.WorkGraph
 	nextID          int               // For generating IDs when bd CLI is not available
-	projectPrefixes map[string]string // Project ID -> bead prefix (e.g., "agenticorp-self" -> "ac")
+	projectPrefixes map[string]string // Project ID -> bead prefix (e.g., "loom-self" -> "ac")
 	projectNextIDs  map[string]int    // Per-project next ID counter
 }
 

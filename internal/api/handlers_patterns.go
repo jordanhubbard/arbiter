@@ -38,7 +38,7 @@ func (s *Server) handlePatternAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -73,7 +73,7 @@ func (s *Server) handleExpensivePatterns(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -105,7 +105,7 @@ func (s *Server) handleAnomalies(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -137,7 +137,7 @@ func (s *Server) handleOptimizations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -197,7 +197,7 @@ func (s *Server) handleSubstitutions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -259,7 +259,7 @@ func (s *Server) handlePromptAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return
@@ -294,7 +294,7 @@ func (s *Server) handlePromptOptimizations(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get pattern manager
-	patternManager := s.agenticorp.GetPatternManager()
+	patternManager := s.app.GetPatternManager()
 	if patternManager == nil {
 		http.Error(w, "Pattern analysis not available", http.StatusServiceUnavailable)
 		return

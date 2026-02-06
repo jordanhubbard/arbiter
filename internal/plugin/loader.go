@@ -389,7 +389,7 @@ func CreateExampleManifest(pluginsDir string) error {
 			PluginAPIVersion: plugin.PluginVersion,
 			ProviderType:     "example-provider",
 			Description:      "An example plugin for demonstration",
-			Author:           "AgentiCorp Team",
+			Author:           "Loom Team",
 			License:          "MIT",
 			Capabilities: plugin.Capabilities{
 				Streaming:       true,

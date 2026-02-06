@@ -31,7 +31,7 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.agenticorp.ExecuteShellCommand(r.Context(), req)
+	result, err := s.app.ExecuteShellCommand(r.Context(), req)
 	if err != nil {
 		s.respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -65,7 +65,7 @@ func (s *Server) HandleGetCommandLogs(w http.ResponseWriter, r *http.Request) {
 		filters["project_id"] = projectID
 	}
 
-	logs, err := s.agenticorp.GetCommandLogs(filters, 100)
+	logs, err := s.app.GetCommandLogs(filters, 100)
 	if err != nil {
 		s.respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -81,7 +81,7 @@ func (s *Server) handleGetCommandLog(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	log, err := s.agenticorp.GetCommandLog(id)
+	log, err := s.app.GetCommandLog(id)
 	if err != nil {
 		s.respondJSON(w, http.StatusNotFound, map[string]string{"error": "command log not found"})
 		return

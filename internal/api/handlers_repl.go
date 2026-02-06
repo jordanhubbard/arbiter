@@ -33,7 +33,7 @@ func (s *Server) handleRepl(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	result, err := s.agenticorp.RunReplQuery(ctx, req.Message)
+	result, err := s.app.RunReplQuery(ctx, req.Message)
 	if err != nil {
 		s.respondError(w, http.StatusBadGateway, err.Error())
 		return

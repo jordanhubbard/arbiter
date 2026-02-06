@@ -209,7 +209,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - AGENTICORP_PASSWORD=${AGENTICORP_PASSWORD}
+      - LOOM_PASSWORD=${LOOM_PASSWORD}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
@@ -305,7 +305,7 @@ Override config.yaml values with environment variables:
 
 ```bash
 # Authentication
-export AGENTICORP_PASSWORD="your-secure-password"
+export LOOM_PASSWORD="your-secure-password"
 export JWT_SECRET="your-jwt-secret"
 
 # LLM Provider API Keys
@@ -326,7 +326,7 @@ export DATABASE_PATH="/app/data/loom.db"
 
 ```bash
 # .env
-AGENTICORP_PASSWORD=dev-password
+LOOM_PASSWORD=dev-password
 OPENAI_API_KEY=sk-...
 ```
 
@@ -596,7 +596,7 @@ export LOG_LEVEL=debug
 ## Security Best Practices
 
 1. **Change default passwords**
-   - Set strong AGENTICORP_PASSWORD
+   - Set strong LOOM_PASSWORD
    - Rotate JWT secrets regularly
 
 2. **Enable HTTPS**

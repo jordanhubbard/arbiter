@@ -47,7 +47,7 @@ func (s *Server) handleBeads(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		beads, err := s.agenticorp.GetBeadsManager().ListBeads(filters)
+		beads, err := s.app.GetBeadsManager().ListBeads(filters)
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -83,7 +83,7 @@ func (s *Server) handleBeads(w http.ResponseWriter, r *http.Request) {
 			req.Priority = 2
 		}
 
-		bead, err := s.agenticorp.CreateBead(req.Title, req.Description, models.BeadPriority(req.Priority), req.Type, req.ProjectID)
+		bead, err := s.app.CreateBead(req.Title, req.Description, models.BeadPriority(req.Priority), req.Type, req.ProjectID)
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -128,7 +128,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := s.agenticorp.ClaimBead(id, req.AgentID); err != nil {
+		if err := s.app.ClaimBead(id, req.AgentID); err != nil {
 			if strings.Contains(err.Error(), "already claimed") {
 				s.respondError(w, http.StatusConflict, err.Error())
 			} else {
@@ -162,7 +162,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		bead, err := s.agenticorp.UpdateBead(id, updates)
+		bead, err := s.app.UpdateBead(id, updates)
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -184,7 +184,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = s.parseJSON(r, &req)
 
-		decision, err := s.agenticorp.EscalateBeadToCEO(id, req.Reason, req.ReturnedTo)
+		decision, err := s.app.EscalateBeadToCEO(id, req.Reason, req.ReturnedTo)
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -196,7 +196,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 	// Handle regular bead operations
 	switch r.Method {
 	case http.MethodGet:
-		bead, err := s.agenticorp.GetBeadsManager().GetBead(id)
+		bead, err := s.app.GetBeadsManager().GetBead(id)
 		if err != nil {
 			s.respondError(w, http.StatusNotFound, "Bead not found")
 			return
@@ -269,7 +269,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 			updates["context"] = req.Context
 		}
 
-		bead, err := s.agenticorp.UpdateBead(id, updates)
+		bead, err := s.app.UpdateBead(id, updates)
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -302,7 +302,7 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	decisions, err := s.agenticorp.GetDecisionManager().ListDecisions(filters)
+	decisions, err := s.app.GetDecisionManager().ListDecisions(filters)
 	if err != nil {
 		s.respondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -339,7 +339,7 @@ func (s *Server) handleDecision(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := s.agenticorp.MakeDecision(id, req.DeciderID, req.Decision, req.Rationale); err != nil {
+		if err := s.app.MakeDecision(id, req.DeciderID, req.Decision, req.Rationale); err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -354,7 +354,7 @@ func (s *Server) handleDecision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decision, err := s.agenticorp.GetDecisionManager().GetDecision(id)
+	decision, err := s.app.GetDecisionManager().GetDecision(id)
 	if err != nil {
 		s.respondError(w, http.StatusNotFound, "Decision not found")
 		return
@@ -370,9 +370,9 @@ func (s *Server) handleFileLocks(w http.ResponseWriter, r *http.Request) {
 
 		var locks []*models.FileLock
 		if projectID != "" {
-			locks = s.agenticorp.GetFileLockManager().ListLocksByProject(projectID)
+			locks = s.app.GetFileLockManager().ListLocksByProject(projectID)
 		} else {
-			locks = s.agenticorp.GetFileLockManager().ListLocks()
+			locks = s.app.GetFileLockManager().ListLocks()
 		}
 
 		s.respondJSON(w, http.StatusOK, locks)
@@ -394,7 +394,7 @@ func (s *Server) handleFileLocks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		lock, err := s.agenticorp.RequestFileAccess(req.ProjectID, req.FilePath, req.AgentID, req.BeadID)
+		lock, err := s.app.RequestFileAccess(req.ProjectID, req.FilePath, req.AgentID, req.BeadID)
 		if err != nil {
 			if strings.Contains(err.Error(), "already locked") {
 				s.respondError(w, http.StatusConflict, err.Error())
@@ -436,7 +436,7 @@ func (s *Server) handleFileLock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.agenticorp.ReleaseFileAccess(projectID, filePath, agentID); err != nil {
+	if err := s.app.ReleaseFileAccess(projectID, filePath, agentID); err != nil {
 		s.respondError(w, http.StatusNotFound, err.Error())
 		return
 	}
@@ -453,7 +453,7 @@ func (s *Server) handleWorkGraph(w http.ResponseWriter, r *http.Request) {
 
 	projectID := r.URL.Query().Get("project_id")
 
-	graph, err := s.agenticorp.GetWorkGraph(projectID)
+	graph, err := s.app.GetWorkGraph(projectID)
 	if err != nil {
 		s.respondError(w, http.StatusInternalServerError, err.Error())
 		return

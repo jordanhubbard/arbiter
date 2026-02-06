@@ -9,6 +9,6 @@ func (s *Server) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := s.agenticorp.GetDispatcher().GetSystemStatus()
+	status := s.app.GetDispatcher().GetSystemStatus()
 	s.respondJSON(w, http.StatusOK, status)
 }

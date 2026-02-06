@@ -20,7 +20,7 @@ func (s *Server) handleWorkflows(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("project_id")
 
 	// Get workflow engine
-	engine := s.agenticorp.GetWorkflowEngine()
+	engine := s.app.GetWorkflowEngine()
 	if engine == nil {
 		http.Error(w, "Workflow engine not available", http.StatusServiceUnavailable)
 		return
@@ -59,7 +59,7 @@ func (s *Server) handleWorkflow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get workflow engine
-	engine := s.agenticorp.GetWorkflowEngine()
+	engine := s.app.GetWorkflowEngine()
 	if engine == nil {
 		http.Error(w, "Workflow engine not available", http.StatusServiceUnavailable)
 		return
@@ -95,7 +95,7 @@ func (s *Server) handleWorkflowExecutions(w http.ResponseWriter, r *http.Request
 	beadID := r.URL.Query().Get("bead_id")
 
 	// Get workflow engine
-	engine := s.agenticorp.GetWorkflowEngine()
+	engine := s.app.GetWorkflowEngine()
 	if engine == nil {
 		http.Error(w, "Workflow engine not available", http.StatusServiceUnavailable)
 		return
@@ -157,7 +157,7 @@ func (s *Server) handleBeadWorkflow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get workflow engine
-	engine := s.agenticorp.GetWorkflowEngine()
+	engine := s.app.GetWorkflowEngine()
 	if engine == nil {
 		http.Error(w, "Workflow engine not available", http.StatusServiceUnavailable)
 		return
@@ -222,7 +222,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Get workflow engine
-	engine := s.agenticorp.GetWorkflowEngine()
+	engine := s.app.GetWorkflowEngine()
 	if engine == nil {
 		http.Error(w, "Workflow engine not available", http.StatusServiceUnavailable)
 		return
@@ -235,7 +235,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 		FROM workflow_executions
 		GROUP BY status
 	`
-	statusRows, err := s.agenticorp.GetDatabase().DB().Query(statusQuery)
+	statusRows, err := s.app.GetDatabase().DB().Query(statusQuery)
 	if err != nil {
 		http.Error(w, "Failed to query execution stats: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -258,7 +258,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 		JOIN workflows w ON we.workflow_id = w.id
 		GROUP BY w.workflow_type
 	`
-	typeRows, err := s.agenticorp.GetDatabase().DB().Query(typeQuery)
+	typeRows, err := s.app.GetDatabase().DB().Query(typeQuery)
 	if err != nil {
 		http.Error(w, "Failed to query type stats: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -281,7 +281,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 		WHERE status = 'active' OR status = 'completed'
 	`
 	var avgCycles, maxCycles float64
-	err = s.agenticorp.GetDatabase().DB().QueryRow(cycleQuery).Scan(&avgCycles, &maxCycles)
+	err = s.app.GetDatabase().DB().QueryRow(cycleQuery).Scan(&avgCycles, &maxCycles)
 	if err != nil {
 		avgCycles = 0
 		maxCycles = 0
@@ -295,7 +295,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 		FROM workflow_executions
 	`
 	var escalatedCount, totalCount int
-	err = s.agenticorp.GetDatabase().DB().QueryRow(escalationQuery).Scan(&escalatedCount, &totalCount)
+	err = s.app.GetDatabase().DB().QueryRow(escalationQuery).Scan(&escalatedCount, &totalCount)
 	if err != nil {
 		escalatedCount = 0
 		totalCount = 0
@@ -314,7 +314,7 @@ func (s *Server) handleWorkflowAnalytics(w http.ResponseWriter, r *http.Request)
 		ORDER BY we.started_at DESC
 		LIMIT 10
 	`
-	recentRows, err := s.agenticorp.GetDatabase().DB().Query(recentQuery)
+	recentRows, err := s.app.GetDatabase().DB().Query(recentQuery)
 	if err != nil {
 		http.Error(w, "Failed to query recent executions: "+err.Error(), http.StatusInternalServerError)
 		return

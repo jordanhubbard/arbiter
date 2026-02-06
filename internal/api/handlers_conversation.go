@@ -14,7 +14,7 @@ import (
 // DELETE /api/v1/conversations/{id} - Delete session
 // POST /api/v1/conversations/{id}/reset - Reset conversation history
 func (s *Server) handleConversation(w http.ResponseWriter, r *http.Request) {
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return
@@ -126,7 +126,7 @@ func (s *Server) handleBeadConversation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return
@@ -163,7 +163,7 @@ func (s *Server) handleConversationsList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return

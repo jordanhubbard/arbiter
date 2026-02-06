@@ -11,6 +11,7 @@
     <script src="/static/js/projects-table.js"></script>
     <script src="/static/js/conversations.js"></script>
     <script src="/static/js/create-bead.js"></script>
+    <script src="/static/js/file-locks.js"></script>
 </head>
 <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -43,22 +44,32 @@
 
     <main id="main-content">
         <div class="view-tabs" role="tablist" aria-label="UI sections">
-            <button class="view-tab active" data-target="project-viewer" role="tab" aria-selected="true">Project Viewer</button>
-            <button class="view-tab" data-target="kanban" role="tab" aria-selected="false">Kanban</button>
-            <button class="view-tab" data-target="providers" role="tab" aria-selected="false">Providers</button>
-            <button class="view-tab" data-target="agents" role="tab" aria-selected="false">Agents</button>
-            <button class="view-tab" data-target="projects" role="tab" aria-selected="false">Projects</button>
-            <button class="view-tab" data-target="conversations" role="tab" aria-selected="false">Conversations</button>
-            <button class="view-tab" data-target="personas" role="tab" aria-selected="false">Personas</button>
-            <button class="view-tab" data-target="decisions" role="tab" aria-selected="false">Decisions</button>
-            <button class="view-tab" data-target="ceo-dashboard" role="tab" aria-selected="false">CEO Dashboard</button>
-            <button class="view-tab" data-target="repl" role="tab" aria-selected="false">CEO REPL</button>
-            <button class="view-tab" data-target="logs" role="tab" aria-selected="false">Logs</button>
-            <button class="view-tab" data-target="streaming-test" role="tab" aria-selected="false">Streaming Test</button>
-            <button class="view-tab" data-target="users" role="tab" aria-selected="false">Users</button>
-            <button class="view-tab" data-target="analytics" role="tab" aria-selected="false">Analytics</button>
-            <button class="view-tab" data-target="motivations" role="tab" aria-selected="false">Motivations</button>
-            <button class="view-tab" data-target="diagrams" role="tab" aria-selected="false">Diagrams</button>
+            <!-- Home -->
+            <button class="view-tab active" data-target="project-viewer" role="tab" aria-selected="true">🏠 Home</button>
+
+            <!-- Work -->
+            <button class="view-tab" data-target="kanban" role="tab" aria-selected="false">📋 Kanban</button>
+            <button class="view-tab" data-target="decisions" role="tab" aria-selected="false">⚖️ Decisions</button>
+
+            <!-- Team -->
+            <button class="view-tab" data-target="agents" role="tab" aria-selected="false">🤖 Agents</button>
+            <button class="view-tab" data-target="personas" role="tab" aria-selected="false">🎭 Personas</button>
+            <button class="view-tab" data-target="users" role="tab" aria-selected="false">👥 Users</button>
+
+            <!-- Projects & Infrastructure -->
+            <button class="view-tab" data-target="projects" role="tab" aria-selected="false">📁 Projects</button>
+            <button class="view-tab" data-target="providers" role="tab" aria-selected="false">🔌 Providers</button>
+            <button class="view-tab" data-target="conversations" role="tab" aria-selected="false">💬 Conversations</button>
+
+            <!-- Admin & Monitoring -->
+            <button class="view-tab" data-target="ceo" role="tab" aria-selected="false">🧭 CEO</button>
+            <button class="view-tab" data-target="analytics" role="tab" aria-selected="false">📊 Analytics</button>
+            <button class="view-tab" data-target="motivations" role="tab" aria-selected="false">⚡ Motivations</button>
+            <button class="view-tab" data-target="logs" role="tab" aria-selected="false">📋 Logs</button>
+
+            <!-- Debug & Dev -->
+            <button class="view-tab" data-target="diagrams" role="tab" aria-selected="false">📊 Diagrams</button>
+            <button class="view-tab" data-target="dev-tools" role="tab" aria-selected="false">🔧 Dev Tools</button>
         </div>
 
         <!-- Project Viewer Section -->
@@ -181,9 +192,34 @@
             </div>
         </section>
 
-        <section id="ceo-dashboard" class="view-panel" role="tabpanel" aria-label="CEO Dashboard" hidden>
-            <h2><span aria-hidden="true">📊</span> CEO Dashboard</h2>
+        <!-- Combined CEO Section -->
+        <section id="ceo" class="view-panel" role="tabpanel" aria-label="CEO Command Center" hidden>
+            <h2><span aria-hidden="true">🧭</span> CEO Command Center</h2>
+
+            <!-- Dashboard Summary -->
+            <h3>Dashboard Overview</h3>
             <div id="ceo-dashboard-summary" class="ceo-dashboard-grid"></div>
+
+            <!-- CEO REPL -->
+            <h3 style="margin-top: 2rem;">CEO REPL</h3>
+            <div class="repl-container">
+                <label for="ceo-repl-input">Ask Loom</label>
+                <textarea id="ceo-repl-input" rows="4" placeholder="Ask a high-priority question…"></textarea>
+                <div class="controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="ceo-repl-stream-toggle" checked>
+                        <label for="ceo-repl-stream-toggle" style="margin: 0; font-size: 0.9rem;">Enable streaming</label>
+                    </div>
+                    <button type="button" id="ceo-repl-send">Send</button>
+                </div>
+                <div id="ceo-repl-response" class="repl-response" aria-live="polite"></div>
+            </div>
+
+            <!-- CEO Assigned Beads -->
+            <div class="ceo-beads-panel" role="region" aria-label="CEO assigned beads">
+                <h3>Assigned to CEO</h3>
+                <div id="ceo-assigned-beads-unified" class="ceo-beads-list"></div>
+            </div>
         </section>
 
         <!-- Providers Section -->
@@ -247,24 +283,9 @@
             </div>
         </section>
 
-        <section id="repl" class="view-panel" role="tabpanel" aria-label="CEO REPL" hidden>
-            <h2><span aria-hidden="true">🧭</span> CEO REPL</h2>
-            <div class="repl-container">
-                <label for="repl-input">Ask Loom</label>
-                <textarea id="repl-input" rows="4" placeholder="Ask a high-priority question…"></textarea>
-                <div class="controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="repl-stream-toggle" checked>
-                        <label for="repl-stream-toggle" style="margin: 0; font-size: 0.9rem;">Enable streaming</label>
-                    </div>
-                    <button type="button" id="repl-send">Send</button>
-                </div>
-                <div id="repl-response" class="repl-response" aria-live="polite"></div>
-            </div>
-            <div class="ceo-beads-panel" role="region" aria-label="CEO assigned beads">
-                <h3>Assigned to CEO</h3>
-                <div id="ceo-assigned-beads" class="ceo-beads-list"></div>
-            </div>
+        <!-- Legacy REPL section - kept for backward compatibility but hidden by default -->
+        <section id="repl" class="view-panel" role="tabpanel" aria-label="CEO REPL (Legacy)" hidden style="display: none;">
+            <!-- Content moved to unified CEO section -->
         </section>
 
         <!-- Logs Section -->
@@ -291,7 +312,7 @@
                         <label for="log-source-filter">Source</label>
                         <select id="log-source-filter">
                             <option value="">All</option>
-                            <option value="agenticorp">AgentiCorp</option>
+                            <option value="loom">Loom</option>
                             <option value="temporal">Temporal</option>
                             <option value="agent">Agent</option>
                             <option value="provider">Provider</option>
@@ -317,10 +338,15 @@
             <div id="log-viewer" class="log-viewer"></div>
         </section>
 
-        <!-- Streaming Test Section -->
-        <section id="streaming-test" class="view-panel" role="tabpanel" aria-label="Streaming Test" hidden>
-            <h2><span aria-hidden="true">⚡</span> Streaming Test</h2>
-            <p class="small" style="margin-bottom: 1rem;">Test real-time streaming responses from AI providers.</p>
+        <!-- Dev Tools Section -->
+        <section id="dev-tools" class="view-panel" role="tabpanel" aria-label="Developer Tools" hidden>
+            <h2><span aria-hidden="true">🔧</span> Developer Tools</h2>
+            <p class="small" style="margin-bottom: 1rem;">Debugging and testing utilities for developers.</p>
+
+            <!-- Streaming Test -->
+            <div class="dev-tool-section">
+                <h3><span aria-hidden="true">⚡</span> Streaming Test</h3>
+                <p class="small" style="margin-bottom: 1rem;">Test real-time streaming responses from AI providers.</p>
             <div class="repl-container">
                 <div class="field">
                     <label for="stream-test-provider">Provider</label>
@@ -344,6 +370,24 @@
                 <div id="stream-test-stats" class="small" style="color: var(--text-muted); margin-top: 0.5rem;"></div>
                 <div id="stream-test-response" class="repl-response" aria-live="polite"></div>
             </div>
+            </div>
+
+            <!-- File Locks -->
+            <div class="dev-tool-section" style="margin-top: 2rem;">
+                <h3><span aria-hidden="true">🔒</span> File Locks</h3>
+                <p class="small" style="margin-bottom: 1rem;">View active file locks across the system.</p>
+                <div class="toolbar">
+                    <button type="button" id="refresh-file-locks-btn" class="secondary">Refresh</button>
+                </div>
+                <div id="file-locks-container">
+                    <!-- File locks will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Legacy Streaming Test section - kept for backward compatibility -->
+        <section id="streaming-test" class="view-panel" role="tabpanel" aria-label="Streaming Test (Legacy)" hidden style="display: none;">
+            <!-- Content moved to dev-tools section -->
         </section>
 
         <!-- Users Section -->

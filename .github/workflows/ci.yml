@@ -81,13 +81,13 @@ jobs:
           cache: true
 
       - name: Build binary
-        run: go build -v -o agenticorp ./cmd/agenticorp
+        run: go build -v -o loom ./cmd/loom
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agenticorp-binary
-          path: agenticorp
+          name: loom-binary
+          path: loom
           retention-days: 7
 
   docker:
@@ -106,14 +106,14 @@ jobs:
         with:
           context: .
           push: false
-          tags: agenticorp:${{ github.sha }}
+          tags: loom:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         run: |
-          docker build -t agenticorp:test .
-          docker run --rm agenticorp:test --version || echo "Binary check passed"
+          docker build -t loom:test .
+          docker run --rm loom:test --version || echo "Binary check passed"
 
   security:
     name: Security Scan

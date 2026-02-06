@@ -39,7 +39,7 @@ type EvaluateMotivationsActivityResult struct {
 }
 
 // EvaluateMotivationsActivity runs one tick of the motivation engine
-// This activity should be called from the AgentiCorpHeartbeatWorkflow
+// This activity should be called from the LoomHeartbeatWorkflow
 func (a *MotivationActivities) EvaluateMotivationsActivity(ctx context.Context, input EvaluateMotivationsActivityInput) (*EvaluateMotivationsActivityResult, error) {
 	result := &EvaluateMotivationsActivityResult{
 		FiredMotivationIDs:   make([]string, 0),

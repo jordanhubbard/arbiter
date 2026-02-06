@@ -25,7 +25,7 @@ export interface ChatCompletionResponse {
     };
 }
 
-export class AgentiCorpClient {
+export class LoomClient {
     private client: AxiosInstance;
     private apiKey: string;
 
@@ -70,9 +70,9 @@ export class AgentiCorpClient {
             return response.data;
         } catch (error: any) {
             if (error.response) {
-                throw new Error(`AgentiCorp API error: ${error.response.status} - ${error.response.data?.message || error.response.statusText}`);
+                throw new Error(`Loom API error: ${error.response.status} - ${error.response.data?.message || error.response.statusText}`);
             } else if (error.request) {
-                throw new Error('AgentiCorp API is not reachable. Please check your connection and API endpoint.');
+                throw new Error('Loom API is not reachable. Please check your connection and API endpoint.');
             } else {
                 throw new Error(`Request error: ${error.message}`);
             }

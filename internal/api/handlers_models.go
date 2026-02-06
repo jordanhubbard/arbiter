@@ -9,6 +9,6 @@ func (s *Server) handleRecommendedModels(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	models := s.agenticorp.ListModelCatalog()
+	models := s.app.ListModelCatalog()
 	s.respondJSON(w, http.StatusOK, map[string]interface{}{"models": models})
 }

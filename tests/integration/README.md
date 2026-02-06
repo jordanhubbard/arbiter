@@ -250,7 +250,7 @@ func TestMyNewWorkflow(t *testing.T) {
 - [Agent Actions Reference](../../docs/WORKFLOW_ACTIONS.md) - Action schema documentation
 - [Git Workflow](../../docs/GIT_SECURITY_MODEL.md) - Git operations and security
 - [Feedback Loops](../../docs/FEEDBACK_LOOPS.md) - Build/lint/test orchestration
-- [Loom Story](../../docs/AGENTICORP_STORY.md) - High-level system overview
+- [Loom Story](../../docs/LOOM_STORY.md) - High-level system overview
 
 ## CI/CD Integration
 

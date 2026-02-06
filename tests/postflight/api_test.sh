@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Post-flight API validation tests for AgentiCorp
+# Post-flight API validation tests for Loom
 # Validates all documented API endpoints are responding correctly
 
 set -euo pipefail
@@ -115,7 +115,7 @@ test_endpoint() {
 
 # Main test suite
 main() {
-    info "Starting AgentiCorp API post-flight tests"
+    info "Starting Loom API post-flight tests"
     info "Base URL: $BASE_URL"
     echo ""
     

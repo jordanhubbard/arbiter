@@ -1,4 +1,4 @@
-// AgentiCorp UI Error Handler and Auto-Filer
+// Loom UI Error Handler and Auto-Filer
 // Catches ALL JS errors and auto-files them as beads
 
 (function() {
@@ -139,7 +139,7 @@
             errorMsg.includes('[GlobalError]') ||       // Already handled by onerror
             errorMsg.includes('[UnhandledRejection]') || // Already handled
             errorMsg.includes('[AutoFile]') ||          // Our own logging
-            errorMsg.includes('[AgentiCorp] API Error:'); // Avoid double-filing API errors
+            errorMsg.includes('[Loom] API Error:'); // Avoid double-filing API errors
         
         // File if it contains error indicators and isn't expected
         const looksLikeError = 

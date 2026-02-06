@@ -1,4 +1,4 @@
-Let's create a trigger mechanism to start the workflow process to jump-start agenticorp into doing things when all beads and agents are idle and nothing seems to be happning from the CEO's perspective.  Internally these will be implemented as triggers - clock events or messages which trigger workflows - but humans call such triggers "Motivations" so we will refer to them as motivations in all of the documentation and user interface and the rest of this converation.
+Let's create a trigger mechanism to start the workflow process to jump-start loom into doing things when all beads and agents are idle and nothing seems to be happning from the CEO's perspective.  Internally these will be implemented as triggers - clock events or messages which trigger workflows - but humans call such triggers "Motivations" so we will refer to them as motivations in all of the documentation and user interface and the rest of this converation.
 
 Motivation is why an agent does anything.  Here are possible motivations for different agents that we need to have wired up in our event bus and workflow triggering mechanism
 

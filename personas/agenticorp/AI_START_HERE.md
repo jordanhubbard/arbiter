@@ -113,7 +113,7 @@ AWAIT_RESPONSE
 IMPLEMENT_RECOMMENDATION
 
 # For priorities
-ASK_AGENTICORP "Which should I prioritize: beads UI or decision flow?"
+ASK_LOOM "Which should I prioritize: beads UI or decision flow?"
 MESSAGE_AGENT engineering-manager "Priority guidance needed"
 AWAIT_DECISION
 

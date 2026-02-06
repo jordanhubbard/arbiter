@@ -1,6 +1,6 @@
 id: "wf-self-improvement"
 name: "Self-Improvement Workflow"
-description: "Autonomous workflow for AgentiCorp self-improvement tasks - no approval gates"
+description: "Autonomous workflow for Loom self-improvement tasks - no approval gates"
 workflow_type: "self-improvement"
 is_default: false
 
@@ -68,7 +68,7 @@ nodes:
       Commit the changes:
       1. Stage modified files (git add)
       2. Create descriptive commit message
-      3. Include Co-Authored-By: AgentiCorp <noreply@agenticorp.dev>
+      3. Include Co-Authored-By: Loom <noreply@loom.dev>
       4. Commit changes
       5. DO NOT push to remote (human will review and push)
 

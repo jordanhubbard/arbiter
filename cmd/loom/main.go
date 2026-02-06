@@ -58,13 +58,13 @@ func main() {
 
 	arb, err := loom.New(cfg)
 	if err != nil {
-		log.Fatalf("failed to create agenticorp: %v", err)
+		log.Fatalf("failed to create loom: %v", err)
 	}
 
 	runCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if err := arb.Initialize(runCtx); err != nil {
-		log.Fatalf("failed to initialize agenticorp: %v", err)
+		log.Fatalf("failed to initialize loom: %v", err)
 	}
 
 	// Initialize hot-reload for development
@@ -202,7 +202,7 @@ func loadPassword() string {
 }
 
 func printHelp() {
-	fmt.Println("Usage: agenticorp [flags]")
+	fmt.Println("Usage: loom [flags]")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -config   Path to configuration file (default: config.yaml)")

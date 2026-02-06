@@ -1,9 +1,9 @@
 {
-  "name": "agenticorp-vscode",
-  "displayName": "AgentiCorp",
-  "description": "AI-powered coding assistant integrated with AgentiCorp",
+  "name": "loom-vscode",
+  "displayName": "Loom",
+  "description": "AI-powered coding assistant integrated with Loom",
   "version": "1.0.0",
-  "publisher": "agenticorp",
+  "publisher": "loom",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -19,59 +19,59 @@
     "assistant",
     "chat",
     "code",
-    "agenticorp"
+    "loom"
   ],
   "activationEvents": [
-    "onCommand:agenticorp.openChat",
-    "onView:agenticorp.chatView"
+    "onCommand:loom.openChat",
+    "onView:loom.chatView"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "agenticorp.openChat",
-        "title": "Open AgentiCorp Chat",
-        "category": "AgentiCorp"
+        "command": "loom.openChat",
+        "title": "Open Loom Chat",
+        "category": "Loom"
       },
       {
-        "command": "agenticorp.askAboutSelection",
-        "title": "Ask AgentiCorp about selection",
-        "category": "AgentiCorp"
+        "command": "loom.askAboutSelection",
+        "title": "Ask Loom about selection",
+        "category": "Loom"
       },
       {
-        "command": "agenticorp.explainCode",
+        "command": "loom.explainCode",
         "title": "Explain this code",
-        "category": "AgentiCorp"
+        "category": "Loom"
       },
       {
-        "command": "agenticorp.generateTests",
+        "command": "loom.generateTests",
         "title": "Generate tests",
-        "category": "AgentiCorp"
+        "category": "Loom"
       },
       {
-        "command": "agenticorp.refactorCode",
+        "command": "loom.refactorCode",
         "title": "Refactor code",
-        "category": "AgentiCorp"
+        "category": "Loom"
       },
       {
-        "command": "agenticorp.fixBug",
+        "command": "loom.fixBug",
         "title": "Help fix this bug",
-        "category": "AgentiCorp"
+        "category": "Loom"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agenticorp",
-          "title": "AgentiCorp",
+          "id": "loom",
+          "title": "Loom",
           "icon": "resources/icon.svg"
         }
       ]
     },
     "views": {
-      "agenticorp": [
+      "loom": [
         {
-          "id": "agenticorp.chatView",
+          "id": "loom.chatView",
           "name": "Chat",
           "type": "webview"
         }
@@ -80,56 +80,56 @@
     "menus": {
       "editor/context": [
         {
-          "command": "agenticorp.askAboutSelection",
+          "command": "loom.askAboutSelection",
           "when": "editorHasSelection",
-          "group": "agenticorp"
+          "group": "loom"
         },
         {
-          "command": "agenticorp.explainCode",
+          "command": "loom.explainCode",
           "when": "editorHasSelection",
-          "group": "agenticorp"
+          "group": "loom"
         },
         {
-          "command": "agenticorp.generateTests",
+          "command": "loom.generateTests",
           "when": "editorHasSelection",
-          "group": "agenticorp"
+          "group": "loom"
         },
         {
-          "command": "agenticorp.refactorCode",
+          "command": "loom.refactorCode",
           "when": "editorHasSelection",
-          "group": "agenticorp"
+          "group": "loom"
         }
       ]
     },
     "configuration": {
-      "title": "AgentiCorp",
+      "title": "Loom",
       "properties": {
-        "agenticorp.apiEndpoint": {
+        "loom.apiEndpoint": {
           "type": "string",
           "default": "http://localhost:8080",
-          "description": "AgentiCorp API endpoint URL"
+          "description": "Loom API endpoint URL"
         },
-        "agenticorp.apiKey": {
+        "loom.apiKey": {
           "type": "string",
           "default": "",
-          "description": "AgentiCorp API key (optional)"
+          "description": "Loom API key (optional)"
         },
-        "agenticorp.model": {
+        "loom.model": {
           "type": "string",
           "default": "default",
           "description": "Preferred AI model"
         },
-        "agenticorp.autoContext": {
+        "loom.autoContext": {
           "type": "boolean",
           "default": true,
           "description": "Automatically include file context in requests"
         },
-        "agenticorp.maxContextLines": {
+        "loom.maxContextLines": {
           "type": "number",
           "default": 100,
           "description": "Maximum lines of context to include"
         },
-        "agenticorp.inlineSuggestions": {
+        "loom.inlineSuggestions": {
           "type": "boolean",
           "default": true,
           "description": "Enable inline code suggestions"
@@ -160,7 +160,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jordanhubbard/AgentiCorp.git"
+    "url": "https://github.com/jordanhubbard/Loom.git"
   },
   "license": "MIT"
 }

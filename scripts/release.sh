@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automated release script for AgentiCorp
+# Automated release script for Loom
 # Usage: ./scripts/release.sh [major|minor|patch]
 # Batch mode: BATCH=yes ./scripts/release.sh [major|minor|patch]
 
@@ -188,7 +188,7 @@ update_changelog() {
         cat > "$changelog_file" << 'EOF'
 # Changelog
 
-All notable changes to AgentiCorp will be documented in this file.
+All notable changes to Loom will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -244,7 +244,7 @@ create_release() {
     
     # Build release notes
     cat > /tmp/release_notes.md << EOF
-## 🎉 AgentiCorp v$version
+## 🎉 Loom v$version
 
 ### 📊 Statistics
 - **Commits since v$prev_version**: $commit_count
@@ -255,13 +255,13 @@ create_release() {
 $release_notes
 
 ### 🔗 Links
-- [Documentation](https://github.com/jordanhubbard/AgentiCorp/tree/main/docs)
-- [User Guide](https://github.com/jordanhubbard/AgentiCorp/blob/main/docs/USER_GUIDE.md)
-- [Architecture](https://github.com/jordanhubbard/AgentiCorp/blob/main/ARCHITECTURE.md)
+- [Documentation](https://github.com/jordanhubbard/Loom/tree/main/docs)
+- [User Guide](https://github.com/jordanhubbard/Loom/blob/main/docs/USER_GUIDE.md)
+- [Architecture](https://github.com/jordanhubbard/Loom/blob/main/ARCHITECTURE.md)
 
 ---
 
-**Full Changelog**: https://github.com/jordanhubbard/AgentiCorp/compare/v$prev_version...v$version
+**Full Changelog**: https://github.com/jordanhubbard/Loom/compare/v$prev_version...v$version
 EOF
     
     # Create annotated git tag
@@ -283,7 +283,7 @@ Release highlights from v$prev_version"
     # Create GitHub release
     info "Creating GitHub release..."
     gh release create "v$version" \
-        --title "AgentiCorp v$version" \
+        --title "Loom v$version" \
         --notes-file /tmp/release_notes.md
     
     # Clean up
@@ -296,7 +296,7 @@ Release highlights from v$prev_version"
 main() {
     echo ""
     echo "╔═══════════════════════════════════════╗"
-    echo "║  AgentiCorp Automated Release Script  ║"
+    echo "║    Loom Automated Release Script      ║"
     echo "╚═══════════════════════════════════════╝"
     echo ""
     
@@ -387,7 +387,7 @@ main() {
     echo "║    🎉 Release Complete! 🎉            ║"
     echo "╚═══════════════════════════════════════╝"
     echo ""
-    echo "Release: https://github.com/jordanhubbard/AgentiCorp/releases/tag/v$NEXT_VERSION"
+    echo "Release: https://github.com/jordanhubbard/Loom/releases/tag/v$NEXT_VERSION"
     echo ""
 }
 

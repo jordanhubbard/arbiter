@@ -9,7 +9,7 @@ import (
 	"golang.org/x/term"
 )
 
-// Config holds the agenticorp configuration
+// Config holds the loom configuration
 type Config struct {
 	DatabasePath string
 	KeyStorePath string
@@ -36,17 +36,17 @@ func Default() (*Config, error) {
 	}
 
 	return &Config{
-		DatabasePath: filepath.Join(dataDir, "agenticorp.db"),
+		DatabasePath: filepath.Join(dataDir, "loom.db"),
 		KeyStorePath: filepath.Join(dataDir, "keystore.json"),
 		DataDir:      dataDir,
 	}, nil
 }
 
 // GetPassword retrieves the unlock password from environment or prompts the user
-// Environment variable takes precedence: AGENTICORP_PASSWORD
+// Environment variable takes precedence: LOOM_PASSWORD
 func GetPassword() (string, error) {
 	// Check environment variable first
-	if password := os.Getenv("AGENTICORP_PASSWORD"); password != "" {
+	if password := os.Getenv("LOOM_PASSWORD"); password != "" {
 		return password, nil
 	}
 

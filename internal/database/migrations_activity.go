@@ -128,7 +128,7 @@ func (d *Database) migrateActivity() error {
 		// Create default admin user
 		_, _ = d.db.Exec(`
 			INSERT INTO users (id, username, email, role, is_active, created_at, updated_at)
-			VALUES ('user-admin', 'admin', 'admin@agenticorp.local', 'admin', 1, datetime('now'), datetime('now'))
+			VALUES ('user-admin', 'admin', 'admin@loom.local', 'admin', 1, datetime('now'), datetime('now'))
 		`)
 		log.Println("Default admin user created in database")
 	}

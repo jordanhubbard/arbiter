@@ -66,7 +66,7 @@ func (s *Server) HandleAutoFileBug(w http.ResponseWriter, r *http.Request) {
 %s
 
 ---
-*This bug was automatically filed by the AgentiCorp error tracking system.*
+*This bug was automatically filed by the Loom error tracking system.*
 *Will be automatically routed to the appropriate specialist for investigation.*
 `,
 		req.Source,
@@ -91,18 +91,18 @@ func (s *Server) HandleAutoFileBug(w http.ResponseWriter, r *http.Request) {
 		priority = models.BeadPriority(3) // P3 (Low)
 	}
 
-	// Get project ID (use agenticorp-self for now)
-	projectID := "agenticorp-self"
-	if s.agenticorp != nil {
-		if pm := s.agenticorp.GetProjectManager(); pm != nil {
-			if project, err := pm.GetProject("agenticorp-self"); err == nil && project != nil {
+	// Get project ID (use loom-self for now)
+	projectID := "loom-self"
+	if s.app != nil {
+		if pm := s.app.GetProjectManager(); pm != nil {
+			if project, err := pm.GetProject("loom-self"); err == nil && project != nil {
 				projectID = project.ID
 			}
 		}
 	}
 
 	// Create the bead
-	bead, err := s.agenticorp.CreateBead(title, description, priority, "bug", projectID)
+	bead, err := s.app.CreateBead(title, description, priority, "bug", projectID)
 	if err != nil {
 		s.respondError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create bead: %v", err))
 		return
@@ -121,7 +121,7 @@ func (s *Server) HandleAutoFileBug(w http.ResponseWriter, r *http.Request) {
 	updates := map[string]interface{}{
 		"tags": []string{"auto-filed", req.Source, req.ErrorType},
 	}
-	if _, err := s.agenticorp.UpdateBead(bead.ID, updates); err != nil {
+	if _, err := s.app.UpdateBead(bead.ID, updates); err != nil {
 		fmt.Printf("[WARN] Failed to update tags for bead %s: %v\n", bead.ID, err)
 	}
 

@@ -1917,3 +1917,26 @@ button.small {
     border-radius: 8px;
     color: var(--danger-color);
 }
+
+/* Dev Tools Section */
+.dev-tool-section {
+    padding: 1.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.dev-tool-section h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+/* View tab group separators */
+.view-tabs {
+    gap: 0.25rem;
+}
+
+.view-tab {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}

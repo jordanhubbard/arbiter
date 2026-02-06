@@ -387,9 +387,9 @@ func TestWebhookIntegration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Create minimal AgentiCorp instance for testing
+	// Create minimal Loom instance for testing
 	// This would require a test database and full setup
-	// For now, we test with nil agenticorp to verify webhook parsing
+	// For now, we test with nil loom to verify webhook parsing
 
 	cfg := &config.Config{
 		Security: config.SecurityConfig{
@@ -397,7 +397,7 @@ func TestWebhookIntegration(t *testing.T) {
 		},
 	}
 
-	// Create server without agenticorp (tests webhook parsing only)
+	// Create server without loom (tests webhook parsing only)
 	server := NewServer(nil, nil, nil, cfg)
 
 	// Test PR webhook end-to-end

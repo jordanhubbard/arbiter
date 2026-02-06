@@ -11,7 +11,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Database represents the agenticorp database
+// Database represents the loom database
 type Database struct {
 	db         *sql.DB
 	dbType     string // "sqlite" or "postgres"

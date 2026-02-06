@@ -11,7 +11,7 @@ import (
 	"github.com/jordanhubbard/loom/pkg/config"
 )
 
-// Client wraps the Temporal client with agenticorp-specific functionality
+// Client wraps the Temporal client with loom-specific functionality
 type Client struct {
 	temporal  client.Client
 	config    *config.TemporalConfig

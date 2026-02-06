@@ -7,7 +7,7 @@ import (
 	"github.com/jordanhubbard/loom/internal/temporal/eventbus"
 )
 
-// Activities provides Temporal activities for agenticorp operations
+// Activities provides Temporal activities for loom operations
 type Activities struct {
 	eventBus *eventbus.EventBus
 }

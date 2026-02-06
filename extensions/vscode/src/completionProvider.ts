@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { AgentiCorpClient } from './client';
+import { LoomClient } from './client';
 
-export class AgentiCorpCompletionProvider implements vscode.InlineCompletionItemProvider {
-    private client: AgentiCorpClient;
+export class LoomCompletionProvider implements vscode.InlineCompletionItemProvider {
+    private client: LoomClient;
     private cache: Map<string, { completion: string; timestamp: number }> = new Map();
     private cacheTTL = 60000; // 1 minute
 
-    constructor(client: AgentiCorpClient) {
+    constructor(client: LoomClient) {
         this.client = client;
     }
 
@@ -21,7 +21,7 @@ export class AgentiCorpCompletionProvider implements vscode.InlineCompletionItem
             return undefined;
         }
 
-        const config = vscode.workspace.getConfiguration('agenticorp');
+        const config = vscode.workspace.getConfiguration('loom');
         const inlineSuggestionsEnabled = config.get('inlineSuggestions', true);
         
         if (!inlineSuggestions Enabled) {
@@ -40,7 +40,7 @@ export class AgentiCorpCompletionProvider implements vscode.InlineCompletionItem
                 return [new vscode.InlineCompletionItem(cached.completion)];
             }
 
-            // Get completion from AgentiCorp
+            // Get completion from Loom
             const completion = await this.getCompletion(context, linePrefix, document.languageId, token);
             
             if (!completion || token.isCancellationRequested) {
@@ -55,13 +55,13 @@ export class AgentiCorpCompletionProvider implements vscode.InlineCompletionItem
 
             return [new vscode.InlineCompletionItem(completion)];
         } catch (error) {
-            console.error('AgentiCorp inline completion error:', error);
+            console.error('Loom inline completion error:', error);
             return undefined;
         }
     }
 
     private getDocumentContext(document: vscode.TextDocument, position: vscode.Position): string {
-        const config = vscode.workspace.getConfiguration('agenticorp');
+        const config = vscode.workspace.getConfiguration('loom');
         const maxLines = config.get('maxContextLines', 50);
         
         const startLine = Math.max(0, position.line - maxLines);

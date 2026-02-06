@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== AgentiCorp Worker System Demo ===")
+	fmt.Println("=== Loom Worker System Demo ===")
 	fmt.Println()
 
 	// Check if API key is set

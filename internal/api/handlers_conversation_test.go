@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jordanhubbard/loom/internal/loom"
 	"github.com/jordanhubbard/loom/internal/auth"
 	"github.com/jordanhubbard/loom/internal/database"
+	"github.com/jordanhubbard/loom/internal/loom"
 	"github.com/jordanhubbard/loom/internal/keymanager"
 	"github.com/jordanhubbard/loom/pkg/config"
 	"github.com/jordanhubbard/loom/pkg/models"
@@ -44,11 +44,11 @@ func setupConversationTestServer(t *testing.T) (*Server, *database.Database, fun
 	cfg := config.DefaultConfig()
 	cfg.Database.Path = dbPath
 
-	// Create agenticorp instance
-	corp, err := agenticorp.New(cfg)
+	// Create loom instance
+	corp, err := loom.New(cfg)
 	if err != nil {
 		db.Close()
-		t.Fatalf("Failed to create agenticorp: %v", err)
+		t.Fatalf("Failed to create loom instance: %v", err)
 	}
 
 	// Create key manager and auth manager

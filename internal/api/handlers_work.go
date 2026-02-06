@@ -45,7 +45,7 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 		ProjectID:   req.ProjectID,
 	}
 
-	result, err := s.agenticorp.GetAgentManager().ExecuteTask(ctx, req.AgentID, task)
+	result, err := s.app.GetAgentManager().ExecuteTask(ctx, req.AgentID, task)
 	if err != nil {
 		s.respondError(w, http.StatusBadGateway, err.Error())
 		return

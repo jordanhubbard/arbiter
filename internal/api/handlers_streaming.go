@@ -45,7 +45,7 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get provider
-	providerReg := s.agenticorp.GetProviderRegistry()
+	providerReg := s.app.GetProviderRegistry()
 	if providerReg == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Provider registry not available")
 		return
@@ -133,7 +133,7 @@ func (s *Server) handleStreamChatCompletion(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Enforce strict JSON action output
-	if router := s.agenticorp.GetActionRouter(); router != nil {
+	if router := s.app.GetActionRouter(); router != nil {
 		raw := streamedText.String()
 		actx := actions.ActionContext{
 			AgentID:   req.AgentID,
@@ -185,7 +185,7 @@ func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get provider registry
-	providerReg := s.agenticorp.GetProviderRegistry()
+	providerReg := s.app.GetProviderRegistry()
 	if providerReg == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Provider registry not available")
 		return
@@ -219,7 +219,7 @@ func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if router := s.agenticorp.GetActionRouter(); router != nil {
+	if router := s.app.GetActionRouter(); router != nil {
 		raw := ""
 		if len(resp.Choices) > 0 {
 			raw = resp.Choices[0].Message.Content
@@ -253,5 +253,5 @@ func defaultProjectID(projectID string) string {
 	if projectID != "" {
 		return projectID
 	}
-	return "agenticorp-self"
+	return "loom-self"
 }

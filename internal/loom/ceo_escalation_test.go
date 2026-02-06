@@ -10,10 +10,10 @@ import (
 	"github.com/jordanhubbard/loom/pkg/models"
 )
 
-func newTestAgentiCorp(t *testing.T) (*Loom, string) {
+func newTestLoom(t *testing.T) (*Loom, string) {
 	t.Helper()
 
-	tmp, err := os.MkdirTemp("", "agenticorp-ceo-*")
+	tmp, err := os.MkdirTemp("", "loom-ceo-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -45,7 +45,7 @@ func newTestAgentiCorp(t *testing.T) (*Loom, string) {
 
 	a, err := New(cfg)
 	if err != nil {
-		t.Fatalf("failed to create agenticorp: %v", err)
+		t.Fatalf("failed to create loom: %v", err)
 	}
 
 	a.GetBeadsManager().SetBeadsPath(tmp)
@@ -53,7 +53,7 @@ func newTestAgentiCorp(t *testing.T) (*Loom, string) {
 }
 
 func TestCEODecisionApproveClosesParentBead(t *testing.T) {
-	a, tmp := newTestAgentiCorp(t)
+	a, tmp := newTestLoom(t)
 	defer os.RemoveAll(tmp)
 
 	bead, err := a.GetBeadsManager().CreateBead("Test bead", "", models.BeadPriorityP2, "task", "loom")
@@ -77,7 +77,7 @@ func TestCEODecisionApproveClosesParentBead(t *testing.T) {
 }
 
 func TestCEODecisionDenyReopensAndUnassignsParentBead(t *testing.T) {
-	a, tmp := newTestAgentiCorp(t)
+	a, tmp := newTestLoom(t)
 	defer os.RemoveAll(tmp)
 
 	bead, err := a.GetBeadsManager().CreateBead("Test bead", "", models.BeadPriorityP2, "task", "loom")
@@ -108,7 +108,7 @@ func TestCEODecisionDenyReopensAndUnassignsParentBead(t *testing.T) {
 }
 
 func TestCEODecisionNeedsMoreInfoReturnsToPriorOwner(t *testing.T) {
-	a, tmp := newTestAgentiCorp(t)
+	a, tmp := newTestLoom(t)
 	defer os.RemoveAll(tmp)
 
 	bead, err := a.GetBeadsManager().CreateBead("Test bead", "", models.BeadPriorityP2, "task", "loom")
@@ -138,7 +138,7 @@ func TestCEODecisionNeedsMoreInfoReturnsToPriorOwner(t *testing.T) {
 }
 
 func TestGlobalDispatcherDoesNotPanicWithNoProjects(t *testing.T) {
-	a, tmp := newTestAgentiCorp(t)
+	a, tmp := newTestLoom(t)
 	defer os.RemoveAll(tmp)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)

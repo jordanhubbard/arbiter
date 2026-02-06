@@ -7,7 +7,7 @@
 - **Health probes**: `/health`, `/health/live`, `/health/ready` endpoints
 - **Graceful shutdown**: SIGTERM handling with 10-second timeout
 - **Multi-stage builds**: Optimized Docker image with separate builder stage
-- **Config via environment**: `TEMPORAL_HOST`, `AGENTICORP_PASSWORD`, etc.
+- **Config via environment**: `TEMPORAL_HOST`, `LOOM_PASSWORD`, etc.
 
 ### 🔄 Partially Implemented
 - **Observability**: Basic health checks, but no Prometheus metrics
@@ -226,7 +226,7 @@ stringData:
 ---
 # In deployment
 env:
-  - name: AGENTICORP_PASSWORD
+  - name: LOOM_PASSWORD
     valueFrom:
       secretKeyRef:
         name: loom-secrets

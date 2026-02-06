@@ -51,7 +51,7 @@ func (s *Server) handleCacheAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get database for analytics storage
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return
@@ -97,7 +97,7 @@ func (s *Server) handleCacheOpportunities(w http.ResponseWriter, r *http.Request
 	priority := r.URL.Query().Get("priority") // "high", "medium", "low"
 
 	// Get database for analytics storage
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return
@@ -166,7 +166,7 @@ func (s *Server) handleCacheOptimize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get database for analytics storage
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return
@@ -251,7 +251,7 @@ func (s *Server) handleCacheRecommendations(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get database for analytics storage
-	db := s.agenticorp.GetDatabase()
+	db := s.app.GetDatabase()
 	if db == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Database not available")
 		return

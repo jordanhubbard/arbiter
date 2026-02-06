@@ -1,8 +1,8 @@
-// Package plugin provides the provider plugin interface for AgentiCorp.
+// Package plugin provides the provider plugin interface for Loom.
 //
 // This package defines the contract that all provider plugins must implement
-// to integrate with AgentiCorp. Plugins allow users to add support for
-// custom AI providers without modifying AgentiCorp's source code.
+// to integrate with Loom. Plugins allow users to add support for
+// custom AI providers without modifying Loom's source code.
 package plugin
 
 import (

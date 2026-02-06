@@ -179,8 +179,8 @@ func (s *Server) handleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Publish event to event bus
-	if s.agenticorp != nil {
-		if eb := s.agenticorp.GetEventBus(); eb != nil {
+	if s.app != nil {
+		if eb := s.app.GetEventBus(); eb != nil {
 			eventData := map[string]interface{}{
 				"webhook_id":   webhookEvent.ID,
 				"webhook_type": webhookEvent.Type,
@@ -217,7 +217,7 @@ func (s *Server) handleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store external event for motivation system to pick up
-	if s.agenticorp != nil {
+	if s.app != nil {
 		s.storeExternalEvent(webhookEvent)
 	}
 
@@ -380,8 +380,8 @@ func (s *Server) storeExternalEvent(event *WebhookEvent) {
 	}
 
 	// Store in database if available
-	if s.agenticorp != nil && s.agenticorp.GetDatabase() != nil {
-		db := s.agenticorp.GetDatabase()
+	if s.app != nil && s.app.GetDatabase() != nil {
+		db := s.app.GetDatabase()
 		// Store as JSON in a key-value or dedicated table
 		eventJSON, _ := json.Marshal(extEvent)
 		_ = db.SetConfigValue("external_event:"+event.ID, string(eventJSON))
@@ -402,8 +402,8 @@ func (s *Server) handleWebhookStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if motivation engine is available
-	if s.agenticorp != nil {
-		status["motivation_engine_available"] = s.agenticorp.GetMotivationEngine() != nil
+	if s.app != nil {
+		status["motivation_engine_available"] = s.app.GetMotivationEngine() != nil
 	}
 
 	s.respondJSON(w, http.StatusOK, status)
@@ -451,8 +451,8 @@ func truncateString(s string, maxLen int) string {
 
 // createCodeReviewBead creates a review bead for a PR event
 func (s *Server) createCodeReviewBead(event *WebhookEvent) error {
-	if s.agenticorp == nil {
-		return fmt.Errorf("agenticorp not initialized")
+	if s.app == nil {
+		return fmt.Errorf("loom not initialized")
 	}
 
 	// Extract PR details
@@ -487,8 +487,8 @@ func (s *Server) createCodeReviewBead(event *WebhookEvent) error {
 This bead tracks the code review workflow for the pull request.
 `, prNumber, event.Repository, author, headRef, baseRef, prURL, getDraftStatus(draft))
 
-	// Create the bead using AgentiCorp
-	bead, err := s.agenticorp.CreateBead(
+	// Create the bead using Loom
+	bead, err := s.app.CreateBead(
 		title,
 		description,
 		2, // P2 priority

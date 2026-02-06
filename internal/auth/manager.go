@@ -48,7 +48,7 @@ func NewManager(jwtSecret string) *Manager {
 	adminUser := &User{
 		ID:        "user-admin",
 		Username:  "admin",
-		Email:     "admin@agenticorp.local",
+		Email:     "admin@loom.local",
 		Role:      "admin",
 		IsActive:  true,
 		CreatedAt: time.Now(),

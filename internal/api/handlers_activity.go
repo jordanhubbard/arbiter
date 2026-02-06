@@ -19,7 +19,7 @@ func (s *Server) handleGetActivityFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activityMgr := s.agenticorp.GetActivityManager()
+	activityMgr := s.app.GetActivityManager()
 	if activityMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Activity manager not available")
 		return
@@ -91,7 +91,7 @@ func (s *Server) handleGetActivityFeed(w http.ResponseWriter, r *http.Request) {
 	// TODO: Enhance to filter by user's project membership once project-user relationships are implemented
 	if role != "admin" && s.config.Security.EnableAuth {
 		// In future, filter by projects the user has access to:
-		// userProjects := s.agenticorp.GetUserProjects(userID)
+		// userProjects := s.app.GetUserProjects(userID)
 		// if len(userProjects) > 0 {
 		//     filters.ProjectIDs = userProjects
 		// }
@@ -120,7 +120,7 @@ func (s *Server) handleActivityFeedStream(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	activityMgr := s.agenticorp.GetActivityManager()
+	activityMgr := s.app.GetActivityManager()
 	if activityMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Activity manager not available")
 		return

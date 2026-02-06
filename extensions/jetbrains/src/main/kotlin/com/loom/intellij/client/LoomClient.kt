@@ -1,4 +1,4 @@
-package com.agenticorp.intellij.client
+package com.loom.intellij.client
 
 import com.google.gson.Gson
 import okhttp3.*
@@ -29,7 +29,7 @@ data class ChatResponse(
     val choices: List<Choice>
 )
 
-class AgentiCorpClient(private var apiEndpoint: String, private var apiKey: String) {
+class LoomClient(private var apiEndpoint: String, private var apiKey: String) {
     private val gson = Gson()
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)

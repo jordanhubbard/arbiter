@@ -50,7 +50,7 @@ When you encounter a decision point:
 - Block on decisions: `BLOCK_ON <decision_bead_id>`
 
 ### Communication
-- Check with Loom: `ASK_AGENTICORP <question>`
+- Check with Loom: `ASK_LOOM <question>`
 - Coordinate with agents: `MESSAGE_AGENT <agent_name> <message>`
 - Report completion: `COMPLETE_BEAD <id> <summary>`
 

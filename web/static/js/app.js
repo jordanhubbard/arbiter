@@ -2,7 +2,7 @@
 const API_BASE = '/api/v1';
 const REFRESH_INTERVAL = 5000; // 5 seconds
 
-const AUTH_TOKEN_KEY = 'agenticorp.authToken';
+const AUTH_TOKEN_KEY = 'loom.authToken';
 let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || '';
 let authCheckInFlight = null;
 let loginInFlight = null;
@@ -66,8 +66,8 @@ let reloadTimers = {};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[AgentiCorp] DOMContentLoaded - Initializing...');
-    console.log('[AgentiCorp] AUTH_ENABLED =', AUTH_ENABLED);
+    console.log('[Loom] DOMContentLoaded - Initializing...');
+    console.log('[Loom] AUTH_ENABLED =', AUTH_ENABLED);
     try {
         initUI();
         initViewTabs();
@@ -75,14 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof cytoscape !== 'undefined' && typeof initDiagramsUI === 'function') {
             initDiagramsUI();
         } else {
-            console.warn('[AgentiCorp] Cytoscape.js or diagrams.js not loaded');
+            console.warn('[Loom] Cytoscape.js or diagrams.js not loaded');
         }
         loadAll();
         startEventStream();
         startAutoRefresh();
-        console.log('[AgentiCorp] Initialization complete');
+        console.log('[Loom] Initialization complete');
     } catch (error) {
-        console.error('[AgentiCorp] Initialization failed:', error);
+        console.error('[Loom] Initialization failed:', error);
     }
 });
 
@@ -222,9 +222,16 @@ function initUI() {
         render();
     });
 
+    // Legacy REPL (backward compat)
     const replSend = document.getElementById('repl-send');
     replSend?.addEventListener('click', () => {
         sendReplQuery();
+    });
+
+    // Unified CEO REPL
+    const ceoReplSend = document.getElementById('ceo-repl-send');
+    ceoReplSend?.addEventListener('click', () => {
+        sendCeoReplQuery();
     });
 
     // Streaming test controls
@@ -347,31 +354,31 @@ function startAutoRefresh() {
 
 // Load all data
 async function loadAll() {
-    console.log('[AgentiCorp] loadAll() started');
+    console.log('[Loom] loadAll() started');
     try {
         await Promise.all([
-            loadBeads().catch(err => { console.error('[AgentiCorp] Failed to load beads:', err); state.beads = []; }),
-            loadProviders().catch(err => { console.error('[AgentiCorp] Failed to load providers:', err); state.providers = []; }),
-            loadAgents().catch(err => { console.error('[AgentiCorp] Failed to load agents:', err); state.agents = []; }),
-            loadProjects().catch(err => { console.error('[AgentiCorp] Failed to load projects:', err); state.projects = []; }),
-            loadPersonas().catch(err => { console.error('[AgentiCorp] Failed to load personas:', err); state.personas = []; }),
-            loadDecisions().catch(err => { console.error('[AgentiCorp] Failed to load decisions:', err); state.decisions = []; }),
-            loadSystemStatus().catch(err => { console.error('[AgentiCorp] Failed to load system status:', err); }),
-            loadUsers().catch(err => { console.error('[AgentiCorp] Failed to load users:', err); state.users = []; }),
-            loadAPIKeys().catch(err => { console.error('[AgentiCorp] Failed to load API keys:', err); state.apiKeys = []; }),
-            loadMotivations().catch(err => { console.error('[AgentiCorp] Failed to load motivations:', err); })
+            loadBeads().catch(err => { console.error('[Loom] Failed to load beads:', err); state.beads = []; }),
+            loadProviders().catch(err => { console.error('[Loom] Failed to load providers:', err); state.providers = []; }),
+            loadAgents().catch(err => { console.error('[Loom] Failed to load agents:', err); state.agents = []; }),
+            loadProjects().catch(err => { console.error('[Loom] Failed to load projects:', err); state.projects = []; }),
+            loadPersonas().catch(err => { console.error('[Loom] Failed to load personas:', err); state.personas = []; }),
+            loadDecisions().catch(err => { console.error('[Loom] Failed to load decisions:', err); state.decisions = []; }),
+            loadSystemStatus().catch(err => { console.error('[Loom] Failed to load system status:', err); }),
+            loadUsers().catch(err => { console.error('[Loom] Failed to load users:', err); state.users = []; }),
+            loadAPIKeys().catch(err => { console.error('[Loom] Failed to load API keys:', err); state.apiKeys = []; }),
+            loadMotivations().catch(err => { console.error('[Loom] Failed to load motivations:', err); })
         ]);
-        await loadCeoBeads().catch(err => { console.error('[AgentiCorp] Failed to load CEO beads:', err); state.ceoBeads = []; });
-        console.log('[AgentiCorp] Data loaded successfully:', {
+        await loadCeoBeads().catch(err => { console.error('[Loom] Failed to load CEO beads:', err); state.ceoBeads = []; });
+        console.log('[Loom] Data loaded successfully:', {
             beads: state.beads?.length || 0,
             projects: state.projects?.length || 0,
             agents: state.agents?.length || 0,
             providers: state.providers?.length || 0
         });
         render();
-        console.log('[AgentiCorp] render() completed');
+        console.log('[Loom] render() completed');
     } catch (error) {
-        console.error('[AgentiCorp] loadAll() failed:', error);
+        console.error('[Loom] loadAll() failed:', error);
     }
 }
 
@@ -445,7 +452,7 @@ async function apiCall(endpoint, options = {}) {
                 response: error.message || ''
             });
         }
-        console.error('[AgentiCorp] API Error:', error);
+        console.error('[Loom] API Error:', error);
         if (!options.suppressToast) {
             showToast(error.message || 'Request failed', 'error');
         }
@@ -1755,8 +1762,14 @@ function getLatestBeadComment(bead) {
 }
 
 function renderCeoBeads() {
-    const container = document.getElementById('ceo-assigned-beads');
+    const container = document.getElementById('ceo-assigned-beads') || document.getElementById('ceo-assigned-beads-unified');
     if (!container) return;
+
+    // Also populate the unified CEO section if it exists
+    const unifiedContainer = document.getElementById('ceo-assigned-beads-unified');
+    if (unifiedContainer && unifiedContainer !== container) {
+        // Will be populated below after rendering
+    }
 
     const ceoAgentIds = new Set(getCeoAgentIds());
     const sourceBeads = Array.isArray(state.ceoBeads) ? state.ceoBeads : state.beads;
@@ -2165,7 +2178,7 @@ async function sendReplQuery() {
         const requestBody = {
             provider_id: providerId,
             messages: [
-                { role: 'system', content: 'You are the CEO of AgentiCorp. Respond concisely and helpfully.' },
+                { role: 'system', content: 'You are the CEO of Loom. Respond concisely and helpfully.' },
                 { role: 'user', content: message }
             ]
         };
@@ -2208,6 +2221,83 @@ async function sendReplQuery() {
         responseEl.textContent = `Request failed: ${e.message || 'Unknown error'}`;
     } finally {
         setBusy('repl', false);
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+    }
+}
+
+// Unified CEO REPL query (uses ceo-repl-* element IDs)
+async function sendCeoReplQuery() {
+    const input = document.getElementById('ceo-repl-input');
+    const responseEl = document.getElementById('ceo-repl-response');
+    const sendBtn = document.getElementById('ceo-repl-send');
+    const streamToggle = document.getElementById('ceo-repl-stream-toggle');
+    if (!input || !responseEl || !sendBtn) return;
+
+    const message = (input.value || '').trim();
+    if (!message) {
+        showToast('Enter a question first.', 'error');
+        return;
+    }
+
+    const useStreaming = streamToggle ? streamToggle.checked : true;
+
+    try {
+        setBusy('ceo-repl', true);
+        sendBtn.disabled = true;
+        sendBtn.textContent = useStreaming ? 'Streaming…' : 'Sending…';
+        responseEl.textContent = '';
+        responseEl.classList.add('streaming');
+
+        const healthyProviders = (state.providers || []).filter(p => p.status === 'healthy' || p.status === 'active');
+        if (healthyProviders.length === 0) {
+            throw new Error('No active providers available');
+        }
+        const providerId = healthyProviders[0].id;
+
+        const requestBody = {
+            provider_id: providerId,
+            messages: [
+                { role: 'system', content: 'You are the CEO of Loom. Respond concisely and helpfully.' },
+                { role: 'user', content: message }
+            ]
+        };
+
+        if (useStreaming) {
+            await createStreamingRequest('/chat/completions', requestBody, {
+                useStreaming: true,
+                onChunk: (chunk, fullContent) => {
+                    responseEl.textContent = fullContent;
+                    responseEl.scrollTop = responseEl.scrollHeight;
+                },
+                onComplete: (fullContent) => {
+                    responseEl.classList.remove('streaming');
+                    responseEl.classList.add('complete');
+                },
+                onError: (error) => {
+                    responseEl.classList.remove('streaming');
+                    responseEl.textContent += '\n\n[Error: ' + error + ']';
+                }
+            });
+        } else {
+            const res = await apiCall('/chat/completions', {
+                method: 'POST',
+                body: JSON.stringify(requestBody)
+            });
+
+            if (res.choices && res.choices[0] && res.choices[0].message) {
+                responseEl.textContent = res.choices[0].message.content || 'No response';
+            } else {
+                responseEl.textContent = 'No response returned.';
+            }
+            responseEl.classList.remove('streaming');
+            responseEl.classList.add('complete');
+        }
+    } catch (e) {
+        responseEl.classList.remove('streaming');
+        responseEl.textContent = 'Request failed: ' + (e.message || 'Unknown error');
+    } finally {
+        setBusy('ceo-repl', false);
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send';
     }

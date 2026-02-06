@@ -418,7 +418,7 @@ func (s *GitService) getCommitStats(ctx context.Context, commitSHA string) (*Com
 
 // configureSSH configures SSH for git operations
 func (s *GitService) configureSSH() error {
-	keyPath := filepath.Join(os.Getenv("HOME"), ".agenticorp", "projects", s.projectID, "git_key")
+	keyPath := filepath.Join(os.Getenv("HOME"), ".loom", "projects", s.projectID, "git_key")
 
 	// Check if key exists
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -567,7 +567,7 @@ type AuditLogger struct {
 
 // NewAuditLogger creates a new audit logger
 func NewAuditLogger(projectID string) (*AuditLogger, error) {
-	logDir := filepath.Join(os.Getenv("HOME"), ".agenticorp", "projects", projectID)
+	logDir := filepath.Join(os.Getenv("HOME"), ".loom", "projects", projectID)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}

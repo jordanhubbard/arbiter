@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const configFileName = ".agenticorp.json"
+const configFileName = ".loom.json"
 
 // Provider represents an AI service provider configuration (file/JSON config).
 type Provider struct {
@@ -24,7 +24,7 @@ type Provider struct {
 	Enabled  bool   `yaml:"enabled" json:"enabled"`
 }
 
-// Config represents the main configuration for the agenticorp system.
+// Config represents the main configuration for the loom system.
 // It supports both YAML-based configuration (for file-based config using LoadConfigFromFile)
 // and JSON-based configuration (for user-specific config using LoadConfig).
 type Config struct {
@@ -182,7 +182,7 @@ func LoadConfigFromFile(path string) (*Config, error) {
 
 // LoadConfig loads user-specific configuration from the default JSON config file.
 // This is typically used for loading user preferences and provider settings.
-// The config file is stored at ~/.agenticorp.json
+// The config file is stored at ~/.loom.json
 func LoadConfig() (*Config, error) {
 	configPath, err := getConfigPath()
 	if err != nil {
@@ -222,7 +222,7 @@ func DefaultConfig() *Config {
 		},
 		Database: DatabaseConfig{
 			Type: "sqlite",
-			Path: "./agenticorp.db",
+			Path: "./loom.db",
 		},
 		Beads: BeadsConfig{
 			BDPath:         "bd",
@@ -255,8 +255,8 @@ func DefaultConfig() *Config {
 		},
 		Temporal: TemporalConfig{
 			Host:                     "localhost:7233",
-			Namespace:                "agenticorp-default",
-			TaskQueue:                "agenticorp-tasks",
+			Namespace:                "loom-default",
+			TaskQueue:                "loom-tasks",
 			WorkflowExecutionTimeout: 24 * time.Hour,
 			WorkflowTaskTimeout:      10 * time.Second,
 			EnableEventBus:           true,

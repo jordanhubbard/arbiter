@@ -18,7 +18,7 @@ import (
 	"github.com/jordanhubbard/loom/pkg/config"
 )
 
-// Manager manages Temporal integration for the agenticorp
+// Manager manages Temporal integration for loom
 type Manager struct {
 	client   *temporalclient.Client
 	eventBus *eventbus.EventBus
@@ -60,7 +60,7 @@ func NewManager(cfg *config.TemporalConfig) (*Manager, error) {
 	w.RegisterWorkflow(eventbus.EventAggregatorWorkflow)
 	w.RegisterWorkflow(workflows.ProviderHeartbeatWorkflow)
 	w.RegisterWorkflow(workflows.ProviderQueryWorkflow)
-	w.RegisterWorkflow(workflows.AgentiCorpHeartbeatWorkflow) // Master clock
+	w.RegisterWorkflow(workflows.LoomHeartbeatWorkflow) // Master clock
 
 	// Register activities
 	if eventBus != nil {
@@ -359,18 +359,18 @@ func (m *Manager) StartProviderHeartbeatWorkflow(ctx context.Context, providerID
 	return nil
 }
 
-// StartAgentiCorpHeartbeatWorkflow starts the master clock heartbeat workflow
-func (m *Manager) StartAgentiCorpHeartbeatWorkflow(ctx context.Context, interval time.Duration) error {
+// StartLoomHeartbeatWorkflow starts the master clock heartbeat workflow
+func (m *Manager) StartLoomHeartbeatWorkflow(ctx context.Context, interval time.Duration) error {
 	if interval == 0 {
 		interval = 10 * time.Second
 	}
 	start := time.Now()
 	observability.Info("temporal.workflow_start", map[string]interface{}{
-		"workflow": "agenticorp_heartbeat",
+		"workflow": "loom_heartbeat",
 		"interval": interval.String(),
 	})
 
-	workflowID := "agenticorp-heartbeat-master"
+	workflowID := "loom-heartbeat-master"
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                  workflowID,
 		TaskQueue:           m.config.TaskQueue,
@@ -378,25 +378,25 @@ func (m *Manager) StartAgentiCorpHeartbeatWorkflow(ctx context.Context, interval
 		WorkflowRunTimeout:  0, // Infinite duration for master clock
 	}
 
-	input := workflows.AgentiCorpHeartbeatWorkflowInput{
+	input := workflows.LoomHeartbeatWorkflowInput{
 		Interval: interval,
 	}
 
-	_, err := m.client.ExecuteWorkflow(ctx, workflowOptions, workflows.AgentiCorpHeartbeatWorkflow, input)
+	_, err := m.client.ExecuteWorkflow(ctx, workflowOptions, workflows.LoomHeartbeatWorkflow, input)
 	if err != nil {
 		if _, ok := err.(*serviceerror.WorkflowExecutionAlreadyStarted); ok {
 			return nil // Already running
 		}
 		observability.Error("temporal.workflow_start", map[string]interface{}{
-			"workflow":    "agenticorp_heartbeat",
+			"workflow":    "loom_heartbeat",
 			"duration_ms": time.Since(start).Milliseconds(),
 		}, err)
-		return fmt.Errorf("failed to start agenticorp heartbeat workflow: %w", err)
+		return fmt.Errorf("failed to start loom heartbeat workflow: %w", err)
 	}
 
-	log.Printf("Started AgentiCorp master heartbeat workflow with %v interval", interval)
+	log.Printf("Started Loom master heartbeat workflow with %v interval", interval)
 	observability.Info("temporal.workflow_started", map[string]interface{}{
-		"workflow":    "agenticorp_heartbeat",
+		"workflow":    "loom_heartbeat",
 		"duration_ms": time.Since(start).Milliseconds(),
 	})
 	return nil

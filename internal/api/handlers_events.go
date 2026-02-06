@@ -17,7 +17,7 @@ func (s *Server) handleEventStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventBus := s.agenticorp.GetEventBus()
+	eventBus := s.app.GetEventBus()
 	if eventBus == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Event bus not available")
 		return
@@ -114,7 +114,7 @@ func (s *Server) handleGetEventStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventBus := s.agenticorp.GetEventBus()
+	eventBus := s.app.GetEventBus()
 	if eventBus == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Event bus not available")
 		return

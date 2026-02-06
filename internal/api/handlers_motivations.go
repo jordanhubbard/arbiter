@@ -495,9 +495,9 @@ func (s *Server) handleIdleState(w http.ResponseWriter, r *http.Request) {
 		CheckedAt:         time.Now(),
 	}
 
-	// Get agent counts from AgentiCorp if available
-	if s.agenticorp != nil {
-		if am := s.agenticorp.GetWorkerManager(); am != nil {
+	// Get agent counts from Loom if available
+	if s.app != nil {
+		if am := s.app.GetWorkerManager(); am != nil {
 			agents := am.ListAgents()
 			resp.TotalAgents = len(agents)
 			for _, a := range agents {
@@ -569,17 +569,17 @@ func (s *Server) handleMotivationDefaults(w http.ResponseWriter, r *http.Request
 // Helper functions
 
 func (s *Server) getMotivationRegistry() *motivation.Registry {
-	if s.agenticorp == nil {
+	if s.app == nil {
 		return nil
 	}
-	return s.agenticorp.GetMotivationRegistry()
+	return s.app.GetMotivationRegistry()
 }
 
 func (s *Server) getMotivationEngine() *motivation.Engine {
-	if s.agenticorp == nil {
+	if s.app == nil {
 		return nil
 	}
-	return s.agenticorp.GetMotivationEngine()
+	return s.app.GetMotivationEngine()
 }
 
 func motivationToResponse(m *motivation.Motivation) MotivationResponse {

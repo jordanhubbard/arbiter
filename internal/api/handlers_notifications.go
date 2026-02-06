@@ -19,7 +19,7 @@ func (s *Server) handleGetNotifications(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	notificationMgr := s.agenticorp.GetNotificationManager()
+	notificationMgr := s.app.GetNotificationManager()
 	if notificationMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Notification manager not available")
 		return
@@ -83,7 +83,7 @@ func (s *Server) handleNotificationStream(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	notificationMgr := s.agenticorp.GetNotificationManager()
+	notificationMgr := s.app.GetNotificationManager()
 	if notificationMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Notification manager not available")
 		return
@@ -152,7 +152,7 @@ func (s *Server) handleNotificationStream(w http.ResponseWriter, r *http.Request
 // handleNotificationActions handles notification action requests
 // POST /api/v1/notifications/{id}/read
 func (s *Server) handleNotificationActions(w http.ResponseWriter, r *http.Request) {
-	notificationMgr := s.agenticorp.GetNotificationManager()
+	notificationMgr := s.app.GetNotificationManager()
 	if notificationMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Notification manager not available")
 		return
@@ -204,7 +204,7 @@ func (s *Server) handleMarkAllRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	notificationMgr := s.agenticorp.GetNotificationManager()
+	notificationMgr := s.app.GetNotificationManager()
 	if notificationMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Notification manager not available")
 		return
@@ -231,7 +231,7 @@ func (s *Server) handleMarkAllRead(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/notifications/preferences
 // PATCH /api/v1/notifications/preferences
 func (s *Server) handleNotificationPreferences(w http.ResponseWriter, r *http.Request) {
-	notificationMgr := s.agenticorp.GetNotificationManager()
+	notificationMgr := s.app.GetNotificationManager()
 	if notificationMgr == nil {
 		s.respondError(w, http.StatusServiceUnavailable, "Notification manager not available")
 		return

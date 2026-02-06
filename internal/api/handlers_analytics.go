@@ -383,7 +383,7 @@ func (s *Server) handleExportStats(w http.ResponseWriter, r *http.Request) {
 	default:
 		// JSON export
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Content-Disposition", "attachment; filename=\"agenticorp-stats-"+time.Now().Format("2006-01-02")+".json\"")
+		w.Header().Set("Content-Disposition", "attachment; filename=\"loom-stats-"+time.Now().Format("2006-01-02")+".json\"")
 		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"exported_at": time.Now().Format(time.RFC3339),
 			"time_range": map[string]string{
@@ -410,7 +410,7 @@ func (s *Server) handleExportStats(w http.ResponseWriter, r *http.Request) {
 // exportStatsAsCSV exports stats summary in CSV format
 func exportStatsAsCSV(w http.ResponseWriter, stats *analytics.LogStats, filter *analytics.LogFilter) {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", "attachment; filename=\"agenticorp-stats-"+time.Now().Format("2006-01-02")+".csv\"")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"loom-stats-"+time.Now().Format("2006-01-02")+".csv\"")
 
 	writer := csv.NewWriter(w)
 	defer writer.Flush()
@@ -446,7 +446,7 @@ func exportStatsAsCSV(w http.ResponseWriter, stats *analytics.LogStats, filter *
 // exportLogsAsCSV exports logs in CSV format
 func exportLogsAsCSV(w http.ResponseWriter, logs []*analytics.RequestLog) {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", "attachment; filename=\"agenticorp-logs-"+time.Now().Format("2006-01-02")+".csv\"")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"loom-logs-"+time.Now().Format("2006-01-02")+".csv\"")
 
 	writer := csv.NewWriter(w)
 	defer writer.Flush()

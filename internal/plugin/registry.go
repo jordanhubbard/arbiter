@@ -78,7 +78,7 @@ func NewDefaultRegistry() *Registry {
 	sources := []RegistrySource{
 		{
 			Name:    "official",
-			URL:     "https://registry.agenticorp.io",
+			URL:     "https://registry.loom.io",
 			Enabled: true,
 		},
 		{
@@ -373,9 +373,9 @@ func AddToLocalRegistry(registryPath string, entry *RegistryEntry) error {
 func getLocalRegistryPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "/tmp/agenticorp/registry"
+		return "/tmp/loom/registry"
 	}
-	return filepath.Join(home, ".agenticorp", "registry")
+	return filepath.Join(home, ".loom", "registry")
 }
 
 func containsTag(tags []string, query string) bool {

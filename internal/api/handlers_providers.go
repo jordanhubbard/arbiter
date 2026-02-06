@@ -24,7 +24,7 @@ type ProviderRequest struct {
 func (s *Server) handleProviders(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		providers, err := s.agenticorp.ListProviders()
+		providers, err := s.app.ListProviders()
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -59,7 +59,7 @@ func (s *Server) handleProviders(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		created, err := s.agenticorp.RegisterProvider(context.Background(), provider)
+		created, err := s.app.RegisterProvider(context.Background(), provider)
 		if err != nil {
 			s.respondError(w, http.StatusBadRequest, err.Error())
 			return
@@ -87,7 +87,7 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 			s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			return
 		}
-		models, err := s.agenticorp.GetProviderModels(context.Background(), providerID)
+		models, err := s.app.GetProviderModels(context.Background(), providerID)
 		if err != nil {
 			s.respondError(w, http.StatusBadGateway, err.Error())
 			return
@@ -100,7 +100,7 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 			s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			return
 		}
-		updated, err := s.agenticorp.NegotiateProviderModel(context.Background(), providerID)
+		updated, err := s.app.NegotiateProviderModel(context.Background(), providerID)
 		if err != nil {
 			s.respondError(w, http.StatusBadGateway, err.Error())
 			return
@@ -111,7 +111,7 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		providers, err := s.agenticorp.ListProviders()
+		providers, err := s.app.ListProviders()
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -125,7 +125,7 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 		s.respondError(w, http.StatusNotFound, "Provider not found")
 
 	case http.MethodDelete:
-		if err := s.agenticorp.DeleteProvider(context.Background(), providerID); err != nil {
+		if err := s.app.DeleteProvider(context.Background(), providerID); err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -138,7 +138,7 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.ID = providerID
-		updated, err := s.agenticorp.UpdateProvider(context.Background(), &req)
+		updated, err := s.app.UpdateProvider(context.Background(), &req)
 		if err != nil {
 			s.respondError(w, http.StatusBadRequest, err.Error())
 			return

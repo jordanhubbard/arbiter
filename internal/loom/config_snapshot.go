@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigSnapshot is the full, import/exportable configuration for AgentiCorp.
+// ConfigSnapshot is the full, import/exportable configuration for Loom.
 type ConfigSnapshot struct {
 	Server           config.ServerConfig        `json:"server" yaml:"server"`
 	Database         config.DatabaseConfig      `json:"database" yaml:"database"`

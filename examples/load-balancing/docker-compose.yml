@@ -5,28 +5,28 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: agenticorp
-      POSTGRES_USER: agenticorp
+      POSTGRES_DB: loom
+      POSTGRES_USER: loom
       POSTGRES_PASSWORD: changeme
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agenticorp"]
+      test: ["CMD-SHELL", "pg_isready -U loom"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # AgentiCorp Instance 1
-  agenticorp-1:
-    image: agenticorp:latest
+  # Loom Instance 1
+  loom-1:
+    image: loom:latest
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_TYPE: postgres
-      DATABASE_DSN: postgresql://agenticorp:changeme@postgres:5432/agenticorp?sslmode=disable
+      DATABASE_DSN: postgresql://loom:changeme@postgres:5432/loom?sslmode=disable
       INSTANCE_NAME: instance-1
     ports:
       - "8080:8080"
@@ -37,15 +37,15 @@ services:
       retries: 3
       start_period: 30s
 
-  # AgentiCorp Instance 2
-  agenticorp-2:
-    image: agenticorp:latest
+  # Loom Instance 2
+  loom-2:
+    image: loom:latest
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_TYPE: postgres
-      DATABASE_DSN: postgresql://agenticorp:changeme@postgres:5432/agenticorp?sslmode=disable
+      DATABASE_DSN: postgresql://loom:changeme@postgres:5432/loom?sslmode=disable
       INSTANCE_NAME: instance-2
     ports:
       - "8081:8080"
@@ -56,15 +56,15 @@ services:
       retries: 3
       start_period: 30s
 
-  # AgentiCorp Instance 3
-  agenticorp-3:
-    image: agenticorp:latest
+  # Loom Instance 3
+  loom-3:
+    image: loom:latest
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_TYPE: postgres
-      DATABASE_DSN: postgresql://agenticorp:changeme@postgres:5432/agenticorp?sslmode=disable
+      DATABASE_DSN: postgresql://loom:changeme@postgres:5432/loom?sslmode=disable
       INSTANCE_NAME: instance-3
     ports:
       - "8082:8080"
@@ -79,9 +79,9 @@ services:
   nginx:
     image: nginx:alpine
     depends_on:
-      - agenticorp-1
-      - agenticorp-2
-      - agenticorp-3
+      - loom-1
+      - loom-2
+      - loom-3
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
@@ -98,4 +98,4 @@ volumes:
 
 networks:
   default:
-    name: agenticorp-network
+    name: loom-network

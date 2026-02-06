@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Example AgentiCorp Plugin - Python Implementation
+Example Loom Plugin - Python Implementation
 
-This is a complete working example of an AgentiCorp provider plugin
+This is a complete working example of a Loom provider plugin
 implemented in Python using Flask. It demonstrates:
 
 - All required plugin endpoints
@@ -49,8 +49,8 @@ METADATA = {
     "plugin_api_version": "1.0.0",
     "provider_type": "example-python",
     "description": "Example plugin demonstrating Python implementation",
-    "author": "AgentiCorp Team",
-    "homepage": "https://github.com/jordanhubbard/AgentiCorp",
+    "author": "Loom Team",
+    "homepage": "https://github.com/jordanhubbard/Loom",
     "license": "MIT",
     "capabilities": {
         "streaming": False,

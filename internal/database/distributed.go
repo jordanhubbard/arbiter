@@ -136,7 +136,7 @@ func (dl *DistributedLock) Release(ctx context.Context) error {
 	return nil
 }
 
-// Instance represents an AgentiCorp instance in the cluster.
+// Instance represents a Loom instance in the cluster.
 type Instance struct {
 	InstanceID    string
 	Hostname      string

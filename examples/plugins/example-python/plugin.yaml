@@ -7,8 +7,8 @@ metadata:
   plugin_api_version: "1.0.0"
   provider_type: example-python
   description: Example plugin demonstrating Python implementation with Flask
-  author: AgentiCorp Team
-  homepage: https://github.com/jordanhubbard/AgentiCorp
+  author: Loom Team
+  homepage: https://github.com/jordanhubbard/loom
   license: MIT
   
   capabilities:

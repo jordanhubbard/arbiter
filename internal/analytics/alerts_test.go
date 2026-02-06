@@ -226,7 +226,7 @@ func TestSMTPConfigLoading(t *testing.T) {
 	t.Setenv("SMTP_PORT", "587")
 	t.Setenv("SMTP_USERNAME", "test@example.com")
 	t.Setenv("SMTP_PASSWORD", "password123")
-	t.Setenv("SMTP_FROM", "noreply@agenticorp.com")
+	t.Setenv("SMTP_FROM", "noreply@loom.dev")
 	t.Setenv("SMTP_USE_TLS", "true")
 
 	config = loadSMTPConfigFromEnv()
@@ -263,7 +263,7 @@ func TestEmailBodyGeneration(t *testing.T) {
 	body := buildEmailBody(alert)
 
 	// Check that key elements are present in the HTML
-	if !containsString(body, "AgentiCorp Alert") {
+	if !containsString(body, "Loom Alert") {
 		t.Error("Email body missing title")
 	}
 	if !containsString(body, "warning") {

@@ -156,7 +156,7 @@ let g:loom_model = 'gpt-4'
 ### API Key from Environment
 
 ```vim
-let g:loom_api_key = $AGENTICORP_API_KEY
+let g:loom_api_key = $LOOM_API_KEY
 ```
 
 ## Architecture

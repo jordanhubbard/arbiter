@@ -288,7 +288,7 @@ func (ac *AlertChecker) sendWebhook(alert *Alert) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "AgentiCorp-Alerts/1.0")
+	req.Header.Set("User-Agent", "Loom-Alerts/1.0")
 	req.Header.Set("X-Alert-Type", alert.Type)
 	req.Header.Set("X-Alert-Severity", alert.Severity)
 
@@ -324,7 +324,7 @@ func (ac *AlertChecker) sendEmail(alert *Alert) error {
 	}
 
 	// Build email message
-	subject := fmt.Sprintf("[AgentiCorp Alert] %s: %s", alert.Severity, alert.Type)
+	subject := fmt.Sprintf("[Loom Alert] %s: %s", alert.Severity, alert.Type)
 	body := buildEmailBody(alert)
 
 	// Construct email headers and body
@@ -440,7 +440,7 @@ func buildEmailBody(alert *Alert) string {
 <body>
     <div class="container">
         <div class="header">
-            <h1 style="margin: 0;">AgentiCorp Alert</h1>
+            <h1 style="margin: 0;">Loom Alert</h1>
             <p style="margin: 5px 0 0 0;">%s Alert</p>
         </div>
         <div class="content">
@@ -470,8 +470,8 @@ func buildEmailBody(alert *Alert) string {
             </div>
         </div>
         <div class="footer">
-            <p>This is an automated alert from AgentiCorp. Please do not reply to this email.</p>
-            <p>To manage your alert settings, please log in to your AgentiCorp dashboard.</p>
+            <p>This is an automated alert from Loom. Please do not reply to this email.</p>
+            <p>To manage your alert settings, please log in to your Loom dashboard.</p>
         </div>
     </div>
 </body>

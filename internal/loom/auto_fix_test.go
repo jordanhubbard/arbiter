@@ -79,14 +79,14 @@ Apply patch
 
 func TestCreateApplyFixBead(t *testing.T) {
 	// This is more of an integration test - we'll just verify the helper function
-	// Full integration would require a complete AgentiCorp instance with database
+	// Full integration would require a complete Loom instance with database
 
 	approvalBead := &models.Bead{
 		ID:          "dc-approval-001",
 		Title:       "[CEO] Code Fix Approval: Fix duplicate API_BASE",
 		Description: "## Code Fix Proposal\n\n**Original Bug:** ac-js-error-001\n\n### Root Cause\nDuplicate declaration\n",
 		Type:        "decision",
-		ProjectID:   "agenticorp-self",
+		ProjectID:   "loom-self",
 		AssignedTo:  "agent-web-designer-001",
 		Context: map[string]string{
 			"agent_id": "agent-web-designer-001",

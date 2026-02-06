@@ -9,7 +9,7 @@
     <button onclick="triggerBug()">Click to Trigger Bug</button>
 
     <script>
-        // Report errors to AgentiCorp
+        // Report errors to Loom
         window.addEventListener('error', function(event) {
             const bugReport = {
                 title: `UI Error: ${event.error?.name || 'Error'}: ${event.error?.message || event.message}`,

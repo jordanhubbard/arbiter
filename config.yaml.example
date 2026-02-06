@@ -1,4 +1,4 @@
-# AgentiCorp Configuration
+# Loom Configuration
 
 server:
   http_port: 8080
@@ -13,11 +13,11 @@ server:
 
 database:
   type: sqlite  # "sqlite" for single instance, "postgres" for distributed deployment
-  path: ./agenticorp.db
+  path: ./loom.db
   
   # For distributed deployment (High Availability):
   # type: postgres
-  # dsn: "postgresql://user:password@localhost:5432/agenticorp?sslmode=require"
+  # dsn: "postgresql://user:password@localhost:5432/loom?sslmode=require"
 
 beads:
   bd_path: bd  # Path to bd executable
@@ -46,8 +46,8 @@ security:
 
 temporal:
   host: localhost:7233
-  namespace: agenticorp-default
-  task_queue: agenticorp-tasks
+  namespace: loom-default
+  task_queue: loom-tasks
   workflow_execution_timeout: 24h
   workflow_task_timeout: 10s
   enable_event_bus: true
@@ -63,9 +63,9 @@ cache:
   redis_url: ""               # Redis URL (e.g., redis://localhost:6379/0) - required for redis backend
 
 projects:
-  - id: agenticorp-self
-    name: AgentiCorp Self-Improvement
-    git_repo: https://github.com/jordanhubbard/AgentiCorp
+  - id: loom-self
+    name: Loom Self-Improvement
+    git_repo: https://github.com/jordanhubbard/Loom
     branch: main
     beads_path: .beads
     is_perpetual: true
@@ -73,7 +73,7 @@ projects:
     context:
       build_command: "go build"
       test_command: "go test ./..."
-      description: "The AgentiCorp project itself - perpetual self-improvement"
+      description: "The Loom project itself - perpetual self-improvement"
   - id: example-project
     name: Example Project
     git_repo: /path/to/repo

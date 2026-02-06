@@ -1,18 +1,18 @@
 import * as vscode from 'vscode';
 import { ChatPanelProvider } from './chatPanel';
-import { AgentiCorpClient } from './client';
-import { AgentiCorpCompletionProvider } from './completionProvider';
+import { LoomClient } from './client';
+import { LoomCompletionProvider } from './completionProvider';
 
 let chatPanelProvider: ChatPanelProvider;
-let completionProvider: AgentiCorpCompletionProvider;
-let client: AgentiCorpClient;
+let completionProvider: LoomCompletionProvider;
+let client: LoomClient;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('AgentiCorp extension is now active');
+    console.log('Loom extension is now active');
 
-    // Initialize AgentiCorp client
-    const config = vscode.workspace.getConfiguration('agenticorp');
-    client = new AgentiCorpClient(
+    // Initialize Loom client
+    const config = vscode.workspace.getConfiguration('loom');
+    client = new LoomClient(
         config.get('apiEndpoint', 'http://localhost:8080'),
         config.get('apiKey', '')
     );
@@ -22,13 +22,13 @@ export function activate(context: vscode.ExtensionContext) {
     
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
-            'agenticorp.chatView',
+            'loom.chatView',
             chatPanelProvider
         )
     );
 
     // Register inline completion provider
-    completionProvider = new AgentiCorpCompletionProvider(client);
+    completionProvider = new LoomCompletionProvider(client);
     
     context.subscriptions.push(
         vscode.languages.registerInlineCompletionItemProvider(
@@ -39,13 +39,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.openChat', () => {
-            vscode.commands.executeCommand('workbench.view.extension.agenticorp');
+        vscode.commands.registerCommand('loom.openChat', () => {
+            vscode.commands.executeCommand('workbench.view.extension.loom');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.askAboutSelection', async () => {
+        vscode.commands.registerCommand('loom.askAboutSelection', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 return;
@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.explainCode', async () => {
+        vscode.commands.registerCommand('loom.explainCode', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 return;
@@ -90,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.generateTests', async () => {
+        vscode.commands.registerCommand('loom.generateTests', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 return;
@@ -111,7 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.refactorCode', async () => {
+        vscode.commands.registerCommand('loom.refactorCode', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 return;
@@ -132,7 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('agenticorp.fixBug', async () => {
+        vscode.commands.registerCommand('loom.fixBug', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 return;
@@ -162,8 +162,8 @@ export function activate(context: vscode.ExtensionContext) {
     // Listen for configuration changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('agenticorp')) {
-                const config = vscode.workspace.getConfiguration('agenticorp');
+            if (e.affectsConfiguration('loom')) {
+                const config = vscode.workspace.getConfiguration('loom');
                 client.updateConfig(
                     config.get('apiEndpoint', 'http://localhost:8080'),
                     config.get('apiKey', '')
@@ -174,5 +174,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    console.log('AgentiCorp extension is now deactivated');
+    console.log('Loom extension is now deactivated');
 }

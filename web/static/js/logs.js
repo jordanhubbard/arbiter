@@ -1,4 +1,4 @@
-// Log Viewer for AgentiCorp
+// Log Viewer for Loom
 // Displays structured logs, heartbeats, and system status
 
 const LogViewer = {
@@ -320,7 +320,7 @@ const LogViewer = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `agenticorp-logs-${new Date().toISOString()}.json`;
+        a.download = `loom-logs-${new Date().toISOString()}.json`;
         a.click();
         URL.revokeObjectURL(url);
     },

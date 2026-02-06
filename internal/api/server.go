@@ -23,7 +23,7 @@ import (
 
 // Server represents the HTTP API server
 type Server struct {
-	agenticorp      *loom.Loom
+	app             *loom.Loom
 	keyManager      *keymanager.KeyManager
 	authManager     *auth.Manager
 	analyticsLogger *analytics.Logger
@@ -99,7 +99,7 @@ func NewServer(arb *loom.Loom, km *keymanager.KeyManager, am *auth.Manager, cfg 
 	promMetrics := metrics.NewMetrics()
 
 	return &Server{
-		agenticorp:      arb,
+		app:             arb,
 		keyManager:      km,
 		authManager:     am,
 		analyticsLogger: analyticsLogger,
@@ -375,7 +375,7 @@ func (s *Server) recordAPIFailure(r *http.Request, statusCode int) {
 	if statusCode < http.StatusInternalServerError {
 		return
 	}
-	if r == nil || r.URL == nil || s.agenticorp == nil {
+	if r == nil || r.URL == nil || s.app == nil {
 		return
 	}
 
@@ -401,7 +401,7 @@ func (s *Server) recordAPIFailure(r *http.Request, statusCode int) {
 		time.Now().UTC().Format(time.RFC3339),
 	)
 
-	_, _ = s.agenticorp.CreateBead(title, description, models.BeadPriority(0), "task", projectID)
+	_, _ = s.app.CreateBead(title, description, models.BeadPriority(0), "task", projectID)
 }
 
 func (s *Server) shouldThrottleFailure(key string, window time.Duration) bool {
@@ -419,10 +419,10 @@ func (s *Server) shouldThrottleFailure(key string, window time.Duration) bool {
 }
 
 func (s *Server) defaultProjectID() string {
-	if s.agenticorp == nil {
+	if s.app == nil {
 		return ""
 	}
-	if pm := s.agenticorp.GetProjectManager(); pm != nil {
+	if pm := s.app.GetProjectManager(); pm != nil {
 		if project, err := pm.GetProject("loom"); err == nil && project != nil {
 			return project.ID
 		}

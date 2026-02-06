@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Welcome to AgentiCorp - AI Coding Agent Orchestrator")
+	fmt.Println("Welcome to Loom - AI Coding Agent Orchestrator")
 	fmt.Println("==================================================")
 
 	// Load configuration from config.yaml if it exists, otherwise use defaults
@@ -38,11 +38,11 @@ func main() {
 		log.Printf("Using Temporal namespace from environment: %s", temporalNamespace)
 	}
 
-	fmt.Println("\nAgentiCorp Worker System initialized")
+	fmt.Println("\nLoom Worker System initialized")
 	fmt.Println("See docs/WORKER_SYSTEM.md for usage information")
 
 	// Start the server
-	fmt.Println("\nStarting AgentiCorp server...")
+	fmt.Println("\nStarting Loom server...")
 	srv := server.NewServer(cfg)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("Server failed: %v", err)

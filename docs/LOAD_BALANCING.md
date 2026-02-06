@@ -198,7 +198,7 @@ backend loom_back
     balance leastconn
     
     # Cookie-based sticky sessions
-    cookie AGENTICORP_INSTANCE insert indirect nocache
+    cookie LOOM_INSTANCE insert indirect nocache
     
     server instance1 backend1:8080 cookie inst1 check
     server instance2 backend2:8080 cookie inst2 check
