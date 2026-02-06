@@ -6,6 +6,8 @@
     <title>AgentiCorp - Agent Orchestration</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/static/js/diagnostic.js?v=6"></script>
+    <link rel="stylesheet" href="/static/css/bootstrap.css">
+    <script src="/static/js/bootstrap.js"></script>
 </head>
 <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -65,7 +67,7 @@
                         <select id="project-view-select"></select>
                     </div>
                     <div class="field">
-                        <button type="button" class="secondary" id="project-view-add" onclick="showCreateProjectModal()" aria-haspopup="dialog">Add Project</button>
+                        <button type="button" class="secondary" id="project-view-add" onclick="showProjectOptionsMenu()" aria-haspopup="dialog">Add Project</button>
                     </div>
                 </div>
             </div>
@@ -211,7 +213,7 @@
         <section id="projects" class="view-panel" role="tabpanel" aria-label="Projects" hidden>
             <h2><span aria-hidden="true">📁</span> Projects</h2>
             <div class="controls">
-                <button type="button" onclick="showCreateProjectModal()" aria-haspopup="dialog">Add Project</button>
+                <button type="button" onclick="showProjectOptionsMenu()" aria-haspopup="dialog">Add Project</button>
             </div>
             <div id="project-list" class="project-container">
                 <!-- Projects will be loaded here -->

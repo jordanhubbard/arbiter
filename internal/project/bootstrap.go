@@ -97,13 +97,17 @@ func (bs *BootstrapService) Bootstrap(ctx context.Context, req BootstrapRequest)
 		return nil, fmt.Errorf("failed to register project: %w", err)
 	}
 
-	// TODO: Create PM bead for PRD expansion
-	// This will be done in a follow-up step after beads manager integration
+	// Create PM bead for PRD expansion
+	initialBeadID, err := bs.createPMExpandPRDBead(ctx, projectPath, project.ID)
+	if err != nil {
+		// Log warning but don't fail bootstrap
+		fmt.Printf("Warning: Failed to create PM bead: %v\n", err)
+	}
 
 	return &BootstrapResult{
 		ProjectID:   project.ID,
-		Status:      "initializing",
-		InitialBead: "", // Will be populated when PM bead is created
+		Status:      "ready",
+		InitialBead: initialBeadID,
 	}, nil
 }
 
@@ -220,4 +224,149 @@ func (bs *BootstrapService) commitInitialStructure(ctx context.Context, projectP
 	}
 
 	return nil
+}
+
+// createPMExpandPRDBead creates the initial PM bead for PRD expansion
+func (bs *BootstrapService) createPMExpandPRDBead(ctx context.Context, projectPath, projectID string) (string, error) {
+	// Create bead using bd CLI
+	cmd := exec.CommandContext(ctx, "bd", "create",
+		"--title", "[Bootstrap] Expand PRD with Best Practices",
+		"--type", "task",
+		"--priority", "0",
+		"--description", "Transform the initial PRD into a comprehensive, actionable PRD",
+	)
+	cmd.Dir = projectPath
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to create PM bead: %w (output: %s)", err, string(output))
+	}
+
+	// Parse bead ID from output (format: "✓ Created issue: ac-xxxx")
+	outputStr := string(output)
+	beadID := ""
+	if idx := len(outputStr) - 8; idx > 0 && len(outputStr) >= 8 {
+		// Extract last 7-8 characters which should be the bead ID
+		beadID = outputStr[len(outputStr)-8:]
+		if beadID[0] == '\n' {
+			beadID = beadID[1:]
+		}
+	}
+
+	// Tag the bead
+	if beadID != "" {
+		cmd = exec.CommandContext(ctx, "bd", "update", beadID, "--tags", "bootstrap,prd-expansion")
+		cmd.Dir = projectPath
+		_ = cmd.Run() // Ignore errors on tagging
+	}
+
+	// Commit the bead
+	cmd = exec.CommandContext(ctx, "git", "-C", projectPath, "add", ".beads/")
+	_ = cmd.Run()
+	
+	cmd = exec.CommandContext(ctx, "git", "-C", projectPath, "commit", "-m", 
+		"chore: create PM bead for PRD expansion\n\nCo-Authored-By: Loom <noreply@loom.dev>")
+	_ = cmd.Run()
+
+	return beadID, nil
+}
+
+// CreateEpicBreakdownBead creates the epic/story breakdown bead (called by PM after PRD expansion)
+func (bs *BootstrapService) CreateEpicBreakdownBead(ctx context.Context, projectPath string) (string, error) {
+	cmd := exec.CommandContext(ctx, "bd", "create",
+		"--title", "[Bootstrap] Create Epics and Stories from PRD",
+		"--type", "task",
+		"--priority", "0",
+		"--description", `Break down the comprehensive PRD into actionable epics and stories as beads.
+
+## Input
+- Comprehensive PRD: plans/ORIGINAL_PRD.md
+- responsible-vibe-mcp guidance
+
+## Tasks
+1. Identify major features (epics)
+2. Break down each epic into user stories (tasks)
+3. Create bead hierarchy:
+   - Epic beads (type: epic, P1-P2)
+   - Story beads (type: task, P2-P3, parent: epic-id)
+4. Assign beads to appropriate roles:
+   - UI/UX work → web-designer or web-designer-engineer
+   - Core engineering → engineering-manager
+   - Infrastructure → devops-engineer
+   - Testing strategy → qa-engineer
+5. Set dependencies between beads
+6. Ensure MVP features are P1, enhancements are P2-P3
+
+## Acceptance Criteria
+- All major features have epic beads
+- Epics broken into concrete, actionable story beads
+- Beads assigned to appropriate agent roles
+- Dependencies set correctly (blockers, blocked-by)
+- Clear acceptance criteria on each story bead
+
+## Guidelines
+- Follow responsible-vibe-mcp decomposition best practices
+- Keep stories small and focused (1-3 days max)
+- Set realistic priorities based on MVP definition
+- Include documentation and testing stories`,
+	)
+	cmd.Dir = projectPath
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to create epic breakdown bead: %w (output: %s)", err, string(output))
+	}
+
+	return string(output), nil
+}
+
+// CreateCEODemoBead creates the CEO demo/review bead when MVP is ready
+func (bs *BootstrapService) CreateCEODemoBead(ctx context.Context, projectPath, projectID string, completedFeatures []string) (string, error) {
+	featuresText := "- " + fmt.Sprintf("%v", completedFeatures)
+	
+	description := fmt.Sprintf(`The initial implementation is ready for review and testing.
+
+## What's Been Built
+%s
+
+## How to Launch
+See docs/DEPLOYMENT.md or README.md for instructions.
+
+Example:
+` + "```bash\n" + `npm install
+npm run dev
+# Open http://localhost:3000
+` + "```\n" + `
+
+## Testing Checklist
+- [ ] Application launches successfully
+- [ ] Core features work as expected
+- [ ] UI is presentable and functional
+- [ ] No critical bugs observed
+- [ ] Meets MVP acceptance criteria
+
+## Next Steps
+Choose one:
+1. **Approve and Complete**: Mark project MVP as done
+2. **Request Changes**: Create follow-up beads for improvements
+3. **Pivot**: Major changes needed, update PRD and restart
+
+## Feedback
+[Provide detailed feedback here]`, featuresText)
+
+	cmd := exec.CommandContext(ctx, "bd", "create",
+		"--title", "[Demo] Review and Test Application",
+		"--type", "decision",
+		"--priority", "0",
+		"--assignee", "ceo",
+		"--description", description,
+	)
+	cmd.Dir = projectPath
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to create CEO demo bead: %w (output: %s)", err, string(output))
+	}
+
+	return string(output), nil
 }
