@@ -1606,6 +1606,7 @@ function renderProviders() {
                     <div class="provider-actions">
                         <button type="button" class="secondary" onclick="fetchProviderModels('${id}')" ${isBusy(modelsKey) ? 'disabled' : ''}>${isBusy(modelsKey) ? 'Loading…' : 'Models'}</button>
                         <button type="button" class="secondary" onclick="renegotiateProvider('${id}')" ${isBusy(negotiateKey) ? 'disabled' : ''}>${isBusy(negotiateKey) ? 'Negotiating…' : 'Re-negotiate model'}</button>
+                        <button type="button" class="secondary" onclick="showEditProviderModal('${id}')">Edit</button>
                         <button type="button" class="secondary" onclick="deleteProvider('${id}')" ${isBusy(deleteKey) ? 'disabled' : ''}>${isBusy(deleteKey) ? 'Deleting…' : 'Delete'}</button>
                     </div>
                 </div>
@@ -2554,6 +2555,53 @@ async function renegotiateProvider(providerId) {
     }
 }
 
+async function showEditProviderModal(providerId) {
+    const provider = state.providers.find(p => p.id === providerId);
+    if (!provider) return;
+
+    try {
+        const res = await formModal({
+            title: `Edit Provider: ${provider.name || provider.id}`,
+            submitText: 'Save Changes',
+            fields: [
+                { id: 'name', label: 'Display name', type: 'text', value: provider.name || '' },
+                { id: 'endpoint', label: 'Provider URL', type: 'text', required: true, value: provider.endpoint || '' },
+                {
+                    id: 'type',
+                    label: 'Protocol',
+                    type: 'select',
+                    value: provider.type || 'local',
+                    options: [
+                        { value: 'local', label: 'Local (vLLM)' },
+                        { value: 'openai', label: 'OpenAI' },
+                        { value: 'anthropic', label: 'Anthropic' },
+                        { value: 'ollama', label: 'Ollama' },
+                        { value: 'custom', label: 'Custom' }
+                    ]
+                },
+                { id: 'model', label: 'Default model', type: 'text', value: provider.model || '' }
+            ]
+        });
+        if (!res) return;
+
+        await apiCall(`/providers/${providerId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                name: res.name,
+                endpoint: res.endpoint,
+                type: res.type,
+                model: res.model
+            })
+        });
+
+        showToast('Provider updated successfully', 'success');
+        await loadProviders();
+        render();
+    } catch (e) {
+        // handled
+    }
+}
+
 async function deleteProvider(providerId) {
     const ok = await confirmModal({
         title: 'Delete provider?',
@@ -3089,12 +3137,48 @@ async function makeDecision(decisionId) {
     }
 }
 
-function editPersona(personaName) {
-    openAppModal({
-        title: 'Persona editor (coming soon)',
-        bodyHtml: `<p>For now, edit <code>${escapeHtml(personaName)}/PERSONA.md</code> and <code>${escapeHtml(personaName)}/AI_START_HERE.md</code> directly in the repo.</p>`,
-        actions: [{ label: 'Close', variant: 'secondary', onClick: () => closeAppModal() }]
-    });
+async function editPersona(personaName) {
+    const persona = state.personas.find(p => p.name === personaName);
+    if (!persona) return;
+
+    try {
+        const res = await formModal({
+            title: `Edit Persona: ${persona.name}`,
+            submitText: 'Save Changes',
+            fields: [
+                { id: 'character', label: 'Character', type: 'textarea', rows: 6, required: true, value: persona.character || '' },
+                { id: 'autonomy_level', label: 'Autonomy Level', type: 'select', required: true, value: persona.autonomy_level || 'moderate',
+                  options: [
+                    { value: 'minimal', label: 'Minimal - Needs constant guidance' },
+                    { value: 'moderate', label: 'Moderate - Some independence' },
+                    { value: 'high', label: 'High - Highly autonomous' },
+                    { value: 'full', label: 'Full - Completely autonomous' }
+                  ]
+                },
+                { id: 'instructions', label: 'Instructions', type: 'textarea', rows: 10, value: persona.instructions || '' },
+                { id: 'tools', label: 'Available Tools (comma-separated)', type: 'text', value: (persona.tools || []).join(', ') }
+            ]
+        });
+        if (!res) return;
+
+        const tools = res.tools ? res.tools.split(',').map(t => t.trim()).filter(t => t) : [];
+
+        await apiCall(`/personas/${personaName}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                character: res.character,
+                autonomy_level: res.autonomy_level,
+                instructions: res.instructions,
+                tools: tools
+            })
+        });
+
+        showToast('Persona updated successfully', 'success');
+        await loadPersonas();
+        render();
+    } catch (e) {
+        // handled
+    }
 }
 
 function closePersonaModal() {
@@ -3388,6 +3472,7 @@ function renderUsers() {
                     <th>Status</th>
                     <th>Created</th>
                     <th>Updated</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -3399,6 +3484,12 @@ function renderUsers() {
                         <td>${user.is_active ? '<span style="color: var(--success-color);">Active</span>' : '<span style="color: var(--text-muted);">Inactive</span>'}</td>
                         <td class="small">${formatDate(user.created_at)}</td>
                         <td class="small">${formatDate(user.updated_at)}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button type="button" class="btn-icon" onclick="showEditUserModal('${escapeHtml(user.id || user.username)}')" title="Edit user">✏️</button>
+                                <button type="button" class="btn-icon btn-danger" onclick="confirmDeleteUser('${escapeHtml(user.id || user.username)}')" title="Delete user">🗑️</button>
+                            </div>
+                        </td>
                     </tr>
                 `).join('')}
             </tbody>
