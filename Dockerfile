@@ -75,11 +75,8 @@ RUN mkdir -p /home/loom/.ssh && \
     chown -R loom:loom /home/loom/.ssh && \
     chmod 700 /home/loom/.ssh
 
-# Create source mount point
-RUN mkdir -p /app/src && chown loom:loom /app/src
-
-# Create data directory for SQLite database persistence
-RUN mkdir -p /app/data && chown loom:loom /app/data
+# Create data directory for SQLite database and project clones
+RUN mkdir -p /app/data/projects && chown -R loom:loom /app/data
 
 # Change ownership
 RUN chown -R loom:loom /app
@@ -88,7 +85,7 @@ RUN chown -R loom:loom /app
 USER loom
 
 # Configure git to use SSH
-RUN git config --global core.sshCommand "ssh -i /home/loom/.ssh/id_ecdsa -o UserKnownHostsFile=/home/loom/.ssh/known_hosts"
+RUN git config --global core.sshCommand "ssh -o UserKnownHostsFile=/home/loom/.ssh/known_hosts -o StrictHostKeyChecking=accept-new"
 
 # Expose port (if needed in future)
 EXPOSE 8080

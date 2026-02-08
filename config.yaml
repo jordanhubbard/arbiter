@@ -13,7 +13,7 @@ server:
 
 database:
   type: sqlite
-  path: ./loom.db  # Local development database
+  path: ./data/loom.db  # Resolves to /app/data/loom.db in container, ./data/loom.db natively
 
 beads:
   bd_path: bd  # Path to bd executable

@@ -145,16 +145,11 @@ func New(cfg *config.Config) (*Loom, error) {
 	}
 
 	// Initialize gitops manager for project repository management
-	gitWorkDir := "/app/src"
-	if len(cfg.Projects) > 0 && cfg.Projects[0].BeadsPath != "" {
-		// Use parent directory of beads path as work directory base
-		gitWorkDir = filepath.Join(filepath.Dir(cfg.Projects[0].BeadsPath), "src")
-	}
 	projectKeyDir := cfg.Git.ProjectKeyDir
 	if projectKeyDir == "" {
 		projectKeyDir = "/app/data/projects"
 	}
-	gitopsMgr, err := gitops.NewManager(gitWorkDir, projectKeyDir, db, nil)
+	gitopsMgr, err := gitops.NewManager(projectKeyDir, projectKeyDir, db, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize gitops manager: %w", err)
 	}
@@ -1409,14 +1404,10 @@ func normalizeBeadsPath(path string) string {
 	// Check paths in order of priority
 	candidates := []string{
 		trimmed,
-		// Container mount path (source mounted at /app/src)
-		filepath.Join("/app/src", trimmed),
 		// Relative path with dot prefix
 		"." + strings.TrimPrefix(trimmed, "/"),
-		filepath.Join("/app/src", "."+strings.TrimPrefix(trimmed, "/")),
-		// Fallbacks
+		// Fallback
 		".beads",
-		"/app/src/.beads",
 	}
 
 	for _, candidate := range candidates {

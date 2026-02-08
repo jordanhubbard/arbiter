@@ -82,19 +82,15 @@ services:
       - TZ=UTC
       - TEMPORAL_HOST=temporal:7233
       - TEMPORAL_NAMESPACE=default
-      - CONFIG_PATH=/app/src/config.yaml
+      - CONFIG_PATH=/app/config.yaml
     networks:
       - loom-network
     extra_hosts:
       - "plubbit.local:10.11.101.250"
       - "sparky.local:10.11.100.116"
     volumes:
-      # Mount entire source directory for hot-reload and bead access
-      - .:/app/src:rw
-      # Persist SQLite database across container restarts
+      # Persist SQLite database and project clones across container restarts
       - loom-db:/app/data
-      # Persist beads across container restarts
-      - loom-beads:/app/src/.beads
       # Mount known_hosts for git SSH operations (read-only)
       # Loom uses its own per-project SSH keys (stored encrypted in DB)
       - ~/.ssh/known_hosts:/home/loom/.ssh/known_hosts:ro
@@ -128,4 +124,3 @@ networks:
 volumes:
   temporal-db-data:
   loom-db:
-  loom-beads:
