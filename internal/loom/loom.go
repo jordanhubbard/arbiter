@@ -459,8 +459,17 @@ func (a *Loom) Initialize(ctx context.Context) error {
 			continue
 		}
 
+		// Detect local project: git_repo is "." or empty, OR the beads path
+		// already exists in the current working directory (self-hosted project).
+		isLocal := p.GitRepo == "" || p.GitRepo == "."
+		if !isLocal {
+			if _, err := os.Stat(p.BeadsPath); err == nil {
+				isLocal = true
+			}
+		}
+
 		// For projects with git repositories, clone/pull them first
-		if p.GitRepo != "" && p.GitRepo != "." {
+		if !isLocal {
 			// Set default auth method if not specified
 			if p.GitAuthMethod == "" {
 				p.GitAuthMethod = models.GitAuthNone // Default to no auth for public repos
