@@ -91,6 +91,72 @@ func TestChatCompletionRequest(t *testing.T) {
 	}
 }
 
+func TestListActiveIncludesActiveAndHealthy(t *testing.T) {
+	registry := provider.NewRegistry()
+
+	// Register provider with "active" status (set by health check on startup)
+	activeConfig := &provider.ProviderConfig{
+		ID:       "prov-active",
+		Name:     "Active Provider",
+		Type:     "openai",
+		Endpoint: "http://localhost:8000/v1",
+		APIKey:   "key",
+		Model:    "model",
+		Status:   "active",
+	}
+	if err := registry.Register(activeConfig); err != nil {
+		t.Fatalf("Register active: %v", err)
+	}
+
+	// Register provider with "healthy" status (set by heartbeat workflow)
+	healthyConfig := &provider.ProviderConfig{
+		ID:       "prov-healthy",
+		Name:     "Healthy Provider",
+		Type:     "openai",
+		Endpoint: "http://localhost:8000/v1",
+		APIKey:   "key",
+		Model:    "model",
+		Status:   "healthy",
+	}
+	if err := registry.Register(healthyConfig); err != nil {
+		t.Fatalf("Register healthy: %v", err)
+	}
+
+	// Register provider with "pending" status (should NOT be active)
+	pendingConfig := &provider.ProviderConfig{
+		ID:       "prov-pending",
+		Name:     "Pending Provider",
+		Type:     "openai",
+		Endpoint: "http://localhost:8000/v1",
+		APIKey:   "key",
+		Model:    "model",
+		Status:   "pending",
+	}
+	if err := registry.Register(pendingConfig); err != nil {
+		t.Fatalf("Register pending: %v", err)
+	}
+
+	active := registry.ListActive()
+	if len(active) != 2 {
+		t.Errorf("ListActive() returned %d providers, want 2 (active + healthy)", len(active))
+	}
+
+	if !registry.IsActive("prov-active") {
+		t.Error("IsActive(prov-active) = false, want true")
+	}
+	if !registry.IsActive("prov-healthy") {
+		t.Error("IsActive(prov-healthy) = false, want true")
+	}
+	if registry.IsActive("prov-pending") {
+		t.Error("IsActive(prov-pending) = true, want false")
+	}
+
+	// Cleanup
+	_ = registry.Unregister("prov-active")
+	_ = registry.Unregister("prov-healthy")
+	_ = registry.Unregister("prov-pending")
+}
+
 func TestProviderTypes(t *testing.T) {
 	registry := provider.NewRegistry()
 

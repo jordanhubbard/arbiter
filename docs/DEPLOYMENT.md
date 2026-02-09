@@ -1,6 +1,6 @@
 # Loom Deployment Guide
 
-**Last Updated:** February 2, 2026
+**Last Updated:** February 8, 2026
 
 This guide covers deploying Loom in various environments, from development to production.
 
@@ -107,6 +107,50 @@ docker run -d \
   -v $(pwd)/data:/app/data \
   loom:custom
 ```
+
+---
+
+## Dolt Database Backend
+
+Loom supports Dolt as an alternative to SQLite for bead storage. Dolt provides git-like versioning for data and federation across instances.
+
+### Container Setup
+
+When running in Docker, Dolt is automatically bootstrapped by the entrypoint script:
+
+1. **Dolt SQL server** starts on port 3307
+2. **Schema** is applied from `scripts/beads-schema.sql` (16 tables, 2 views)
+3. **Federation** is enabled for cross-instance synchronization
+4. **SSH keys** are stored in `data/keys/` (isolated from git tree)
+
+### Configuration
+
+```yaml
+# config.yaml
+beads:
+  backend: dolt          # "sqlite" (default) or "dolt"
+
+# Expose Dolt SQL port in docker-compose.yml
+services:
+  loom:
+    ports:
+      - "8080:8080"
+      - "3307:3307"       # Dolt SQL server
+```
+
+### Volume Mapping
+
+The container stores project data in `/app/data/projects` (decoupled from host source):
+
+```yaml
+volumes:
+  - loom-data:/app/data              # Database, keys, project working dirs
+  - loom-projects:/app/data/projects # Per-project git repos and beads
+```
+
+### SSH Key Isolation
+
+Per-project SSH keys are stored under `data/keys/{project-id}/` rather than inside the git working tree. This prevents keys from being accidentally committed.
 
 ---
 

@@ -1,6 +1,6 @@
 # Loom Architecture Guide
 
-**Last Updated**: February 2, 2026 (Work flow fixes + pattern analysis engine)
+**Last Updated**: February 8, 2026 (Multi-turn action loop, pair-programming, Dolt support, auto-provider assignment)
 
 This document describes the architecture of Loom, the Agent Orchestration System for managing distributed AI workflows.
 
@@ -27,6 +27,10 @@ Loom is a comprehensive agent orchestration platform that:
 - **NEW (v1.3)**: Activity feed and team notifications system
 - **NEW (v1.4)**: Usage pattern analysis and cost optimization engine
 - **NEW (v1.4)**: Critical work flow fixes (provider activation, agent recovery)
+- **NEW (v1.5)**: Multi-turn action loop engine with iterative LLM feedback
+- **NEW (v1.5)**: Pair-programming mode for interactive human-agent chat
+- **NEW (v1.5)**: Auto-provider assignment (zero-config agent setup)
+- **NEW (v1.5)**: Dolt database support with federation and SQL server
 
 ## Core Components
 
@@ -302,7 +306,14 @@ Format: `<resource>:<action>` (e.g., `agents:read`, `beads:write`)
 - `internal/database/database.go`
 - `internal/database/models.go`
 
-**Implementation**: SQLite with embedded database
+**Implementation**: SQLite (default) or Dolt (git-for-data, with federation support)
+
+**Dolt Backend** (NEW v1.5):
+- Dolt SQL server on port 3307 (bootstrapped in container entrypoint)
+- Schema defined in `scripts/beads-schema.sql` (16 tables, 2 views)
+- Federation enabled for cross-instance bead synchronization
+- SSH keys isolated to `data/keys/` (separate from git tree)
+- Automatic schema bootstrap on first run
 
 **Key Tables**:
 - `agents`: Agent state, role, status
@@ -672,6 +683,72 @@ RequestLogs (Analytics) → Pattern Analyzer → Optimization Engine → Recomme
 
 See [docs/usage-pattern-analysis.md](usage-pattern-analysis.md) for complete reference.
 
+### 16. Multi-Turn Action Loop Engine (NEW v1.5)
+
+**Purpose**: Enable agents to execute multi-step tasks with iterative LLM feedback, rather than single-shot completion.
+
+**Key Files**:
+- `internal/agent/worker.go` - `ExecuteTaskWithLoop()` main loop
+- `internal/actions/feedback.go` - `FormatResultsAsUserMessage()` per-action feedback
+- `internal/actions/types.go` - Action type definitions including `ActionDone`
+- `internal/database/lessons.go` - Per-project lesson persistence
+- `internal/dispatch/lessons_provider.go` - Lesson injection into agent context
+
+**Concepts**:
+- **Action Loop**: LLM → parse actions → execute → format feedback → send back to LLM → repeat
+- **Actions**: Structured JSON operations agents can perform (read_file, write_file, search_text, create_bead, close_bead, done, etc.)
+- **Feedback**: Each action execution returns formatted results that become the next user message to the LLM
+- **Lessons**: Per-project learnings from failures, injected into agent context to prevent repeated mistakes
+- **Terminal Conditions**: Loop exits on: close_bead, done action, escalate_ceo, no actions returned, max iterations, 2 consecutive parse failures, or 10 repeated response hashes
+
+**Workflow**:
+1. Dispatcher assigns bead to agent worker
+2. Worker builds initial prompt with bead context + lessons
+3. LLM returns JSON with `actions` array
+4. Worker parses and executes each action
+5. `FormatResultsAsUserMessage()` builds feedback for LLM
+6. Loop repeats until terminal condition
+7. Dispatcher records `loop_iterations` and `terminal_reason` in bead context
+
+**Configuration**:
+- `WorkerManager.actionLoopEnabled` - Enable/disable the loop (default: enabled)
+- `WorkerManager.maxLoopIterations` - Maximum iterations before forced exit (default: 20)
+
+### 17. Pair-Programming Mode (NEW v1.5)
+
+**Purpose**: Interactive real-time chat between human and AI agent, scoped to a specific bead.
+
+**Key Files**:
+- `internal/api/handlers_pair.go` - SSE streaming pair endpoint
+- `web/static/js/pair.js` - Frontend chat panel UI
+
+**Concepts**:
+- **Pair Session**: A streaming conversation between user and agent about a specific bead
+- **Bead Scope**: Conversation has full context of the bead being worked on
+- **Action Execution**: Agent can execute actions (read/write files, etc.) during the chat
+- **Conversation Persistence**: Chat history stored at `/beads/{id}/conversation`
+
+**API**:
+- `POST /api/v1/pair` - Start SSE pair session with `{bead_id, agent_id, message}`
+
+**Frontend**:
+- Chat panel integrated into the bead viewer modal
+- Agent selector dropdown
+- Streaming message display with markdown rendering
+- Message history preserved across modal reopens
+
+### 18. Auto-Provider Assignment (NEW v1.5)
+
+**Purpose**: Agents automatically receive providers from the shared pool, eliminating manual per-agent configuration.
+
+**Key Changes**:
+- Agents no longer require explicit `provider_id` configuration
+- Dispatcher auto-assigns first healthy provider from `ListActive()` pool
+- Paused agents automatically promoted to idle when providers become available
+- Default readiness mode changed from `"block"` to `"warn"` — dispatch proceeds even if git remote checks fail
+
+**Impact**: Zero-configuration agent setup. Register providers globally, and all agents can use them.
+
 ## Data Flow
 
 ### Work Distribution Flow
@@ -820,7 +897,7 @@ make distclean  # Wipes database and Temporal state
 
 ## High-Level Architecture Diagram
 
-**Last Updated**: February 2, 2026 (Added Pattern Analysis & Optimization Engine)
+**Last Updated**: February 8, 2026 (Added action loop, pair mode, auto-provider, Dolt)
 
 ### System Component Diagram
 
@@ -863,7 +940,7 @@ graph TB
 
     subgraph "External Services"
         TP[Temporal Server<br/>:7233]
-        DB[(SQLite Database<br/>State persistence)]
+        DB[(SQLite / Dolt Database<br/>State persistence)]
         GIT[Git Repositories<br/>code + .beads/issues.jsonl]
         KEYS[(Project SSH Keys<br/>/app/data/projects)]
     end

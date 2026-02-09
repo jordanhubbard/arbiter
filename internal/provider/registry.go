@@ -265,5 +265,5 @@ func (r *Registry) GetModels(ctx context.Context, providerID string) ([]Model, e
 }
 
 func isProviderHealthy(status string) bool {
-	return status == "healthy"
+	return status == "healthy" || status == "active"
 }

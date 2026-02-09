@@ -286,6 +286,45 @@ curl -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 ---
 
+## Pair-Programming Mode
+
+Pair-programming mode lets you chat interactively with an AI agent about a specific bead. Unlike async dispatch (where agents work autonomously), pair mode is a real-time conversation.
+
+### When to Use Pair Mode
+
+- Clarifying complex requirements before an agent starts work
+- Collaborating on tricky implementation details
+- Reviewing agent work in progress and providing guidance
+- Debugging issues together with an agent
+
+### Starting a Pair Session
+
+1. Open a bead in the **Bead Viewer**
+2. Click the **Pair** button in the bead modal
+3. Select an agent from the dropdown
+4. Type your message and send
+
+The agent responds in real-time via streaming, with full context of the bead. The agent can also execute actions (read/write files, search code) during the conversation.
+
+### Conversation Persistence
+
+Chat history is saved per-bead and persists across modal reopens. Previous messages are visible when you return to a bead's pair session.
+
+### API Usage
+
+```bash
+# Start a pair session (SSE stream)
+curl -N -X POST http://localhost:8080/api/v1/pair \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bead_id": "bead-123",
+    "agent_id": "agent-456",
+    "message": "How should we approach the auth middleware?"
+  }'
+```
+
+---
+
 ## Getting Results
 
 When agents complete work:

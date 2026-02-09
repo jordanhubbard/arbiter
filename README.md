@@ -100,6 +100,9 @@ Loom is a lightweight AI coding agent orchestration system that manages workflow
 - 🔒 **Secure**: Encrypted secret storage and secure credential management
 - 📈 **Analytics & Cost Tracking**: Real-time usage monitoring, cost tracking, and spending alerts
 - 🔍 **Usage Pattern Analysis**: Multi-dimensional pattern clustering, anomaly detection, and cost optimization recommendations
+- 🔁 **Multi-Turn Action Loop**: Agents iterate with LLM feedback — read, write, search, and close beads autonomously
+- 💬 **Pair-Programming Mode**: Interactive real-time chat with agents scoped to specific beads
+- ⚡ **Auto-Provider Assignment**: Zero-config — agents automatically use available providers from the shared pool
 
 ## Default Personas
 
@@ -344,6 +347,11 @@ See `personas/loom/` for the complete persona definition.
 - [x] Data export (CSV/JSON) for external analysis
 - [x] Spending alerts with anomaly detection
 - [x] Privacy-first logging with GDPR compliance
+- [x] Multi-turn action loop engine with iterative LLM feedback
+- [x] Pair-programming mode for interactive human-agent chat
+- [x] Auto-provider assignment (zero-config agent setup)
+- [x] Dolt database backend with federation support
+- [x] Container decoupling from host source mount
 
 ## Planned Features
 
