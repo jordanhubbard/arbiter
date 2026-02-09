@@ -110,6 +110,62 @@ docker run -d \
 
 ---
 
+## Provider Registration
+
+Providers are **not** configured in `config.yaml` — they are registered via the REST API. This keeps API keys and deployment-specific endpoints out of version control.
+
+### First-Time Setup
+
+After starting Loom, register your providers:
+
+```bash
+# Local vLLM server (no API key)
+curl -X POST http://localhost:8081/api/v1/providers \
+  -H "Content-Type: application/json" \
+  -d '{"id":"local-gpu","name":"Local GPU","type":"local","endpoint":"http://gpu-server:8000/v1","model":"my-model"}'
+
+# Cloud provider (API key from environment variable)
+curl -X POST http://localhost:8081/api/v1/providers \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"cloud\",\"name\":\"Cloud Provider\",\"type\":\"openai\",\"endpoint\":\"https://api.example.com/v1\",\"model\":\"model-name\",\"api_key\":\"$MY_API_KEY\"}"
+```
+
+### bootstrap.local Pattern
+
+For repeatable setup, create a `bootstrap.local` script from the provided template:
+
+```bash
+cp bootstrap.local.example bootstrap.local
+chmod +x bootstrap.local
+```
+
+Edit it with your providers, then run it once after starting Loom:
+
+```bash
+./bootstrap.local
+```
+
+The script reads API keys from environment variables (`$NVIDIA_API_KEY`, `$OPENAI_API_KEY`, etc.), which should be set in `~/.zshenv`, `~/.bashrc`, or `.env`. Keys are passed to Loom's API and stored in the encrypted vault — they never appear in committed files.
+
+`bootstrap.local` is gitignored. See `bootstrap.local.example` for the full template.
+
+### Environment Variable Expansion in config.yaml
+
+`config.yaml` supports `${VAR_NAME}` syntax — environment variables are expanded before YAML parsing. This is useful for non-secret deployment-specific values:
+
+```yaml
+temporal:
+  host: ${TEMPORAL_HOST:-localhost:7233}
+```
+
+However, **provider API keys should use the bootstrap.local pattern**, not config.yaml, since config.yaml is committed to git.
+
+### Provider Persistence
+
+Providers persist in the database across restarts. You only need to register them once per fresh deployment or database wipe.
+
+---
+
 ## Dolt Database Backend
 
 Loom supports Dolt as an alternative to SQLite for bead storage. Dolt provides git-like versioning for data and federation across instances.

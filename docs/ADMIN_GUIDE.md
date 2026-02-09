@@ -148,33 +148,66 @@ curl -X POST http://localhost:8080/api/v1/auth/change-password \
 
 Providers are the AI backends that execute agent work. Loom supports multiple providers simultaneously with intelligent routing.
 
-### Registering a Provider
+### Registering Providers
+
+Providers are registered via the REST API — **not** in `config.yaml`. This keeps API keys and local endpoints out of version control.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/providers \
+# Local GPU (no API key needed)
+curl -X POST http://localhost:8081/api/v1/providers \
   -H "Content-Type: application/json" \
-  -d '{
-    "id": "anthropic-main",
-    "name": "Anthropic Claude",
-    "type": "anthropic",
-    "endpoint": "https://api.anthropic.com/v1",
-    "api_key": "sk-ant-...",
-    "model": "claude-sonnet-4-5-20250929",
-    "description": "Primary Anthropic provider"
-  }'
+  -d '{"id":"local-gpu","name":"Local GPU","type":"local","endpoint":"http://gpu-server:8000/v1","model":"nvidia/Nemotron-30B"}'
+
+# Cloud provider (API key from environment)
+curl -X POST http://localhost:8081/api/v1/providers \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"nvidia-cloud\",\"name\":\"NVIDIA Cloud\",\"type\":\"openai\",\"endpoint\":\"https://inference-api.nvidia.com/v1\",\"model\":\"nvidia/openai/gpt-oss-20b\",\"api_key\":\"$NVIDIA_API_KEY\"}"
 ```
 
-Or define providers in `config.yaml`:
+API keys are stored in Loom's encrypted vault (not in plaintext on disk) and persist across restarts.
 
-```yaml
-providers:
-  - id: local-gpu
-    name: Local GPU Server
-    type: local
-    endpoint: http://gpu-server:8000/v1
-    model: nvidia/Nemotron-3-Nano-30B
-    enabled: true
+### Using bootstrap.local for Repeatable Setup
+
+For reproducible provider registration, use a `bootstrap.local` script (gitignored):
+
+```bash
+cp bootstrap.local.example bootstrap.local
+chmod +x bootstrap.local
+vim bootstrap.local    # Add your providers
+./bootstrap.local      # Register them with Loom
 ```
+
+This script calls the provider API using a helper function. Environment variables are expanded by the shell, so API keys never appear in the file itself:
+
+```bash
+# In bootstrap.local:
+register_provider "nvidia-cloud" "NVIDIA Cloud" "openai" \
+  "https://inference-api.nvidia.com/v1" "nvidia/openai/gpt-oss-20b" \
+  "$NVIDIA_API_KEY"    # Expanded from environment at runtime
+```
+
+Set your API keys in `~/.zshenv`, `~/.bashrc`, or a `.env` file:
+
+```bash
+export NVIDIA_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...
+```
+
+**When to run `bootstrap.local`:**
+- After a fresh install or database wipe (`make distclean`)
+- When adding a new provider
+- After restoring from backup (providers are in the DB, but run it if the DB was lost)
+
+**You do NOT need to re-run it** after normal restarts — providers persist in the database.
+
+### Why Not config.yaml?
+
+`config.yaml` is committed to git. Provider configuration contains:
+- API keys (secrets)
+- Local network endpoints (e.g., `http://plubbit.local:8000`) that only apply to one deployment
+- Model selections that vary per environment
+
+None of this belongs in version control. The `bootstrap.local` pattern keeps deployment-specific configuration local while `config.yaml` holds structural settings shared across all deployments.
 
 ### Provider Fields
 

@@ -56,39 +56,84 @@ Once the services are running:
 
 ## Configuration
 
-Configuration is managed via `config.yaml`:
+Structural configuration is managed via `config.yaml` (server, temporal, agents, projects). Secrets like API keys are **never** stored in `config.yaml` — see [Registering Providers](#registering-providers) below.
 
 ```yaml
 server:
-  http_port: 8080
+  http_port: 8081
   enable_http: true
 
 temporal:
-  host: localhost:7233              # Temporal server address
-  namespace: loom-default           # Temporal namespace
-  task_queue: loom-tasks            # Task queue name
-  workflow_execution_timeout: 24h   # Max workflow duration
-  workflow_task_timeout: 10s        # Workflow task timeout
-  enable_event_bus: true            # Enable event bus
-  event_buffer_size: 1000           # Event buffer size
+  host: localhost:7233
+  namespace: default
+  task_queue: loom-tasks
 
 agents:
-  max_concurrent: 10
+  max_concurrent: 6
   default_persona_path: ./personas
   heartbeat_interval: 30s
-  file_lock_timeout: 10m
 ```
 
-Create your config from the example:
+Environment variables in `config.yaml` are expanded automatically — `${MY_VAR}` is replaced with the value of `MY_VAR` from the environment.
+
+## Registering Providers
+
+Providers (LLM backends) are registered via the Loom API, **not** in `config.yaml`. This keeps API keys out of version control and allows per-deployment configuration.
+
+### Quick Start: Register a Provider
+
 ```bash
-cp config.yaml.example config.yaml
-# or
-make config
+curl -X POST http://localhost:8081/api/v1/providers \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"my-provider\",\"name\":\"My Provider\",\"type\":\"openai\",\"endpoint\":\"http://localhost:8000/v1\",\"model\":\"my-model\",\"api_key\":\"$MY_API_KEY\"}"
 ```
+
+API keys are stored in Loom's encrypted vault and persist across restarts.
+
+### Using bootstrap.local
+
+For repeatable setup, create a `bootstrap.local` script (gitignored) that registers all your providers:
+
+```bash
+cp bootstrap.local.example bootstrap.local
+chmod +x bootstrap.local
+# Edit bootstrap.local with your providers and API keys
+./bootstrap.local
+```
+
+The file uses a `register_provider` helper function:
+
+```bash
+#!/bin/bash
+LOOM_URL="${LOOM_URL:-http://localhost:8081}"
+
+register_provider() {
+  local id="$1" name="$2" type="$3" endpoint="$4" model="$5" api_key="${6:-}"
+  # ... builds JSON and calls POST /api/v1/providers
+}
+
+# Local GPU (no API key)
+register_provider "local-gpu" "Local GPU" "local" \
+  "http://gpu-server:8000/v1" "nvidia/Nemotron-30B"
+
+# Cloud provider (API key from environment)
+register_provider "nvidia-cloud" "NVIDIA Cloud" "openai" \
+  "https://inference-api.nvidia.com/v1" "nvidia/openai/gpt-oss-20b" \
+  "$NVIDIA_API_KEY"
+```
+
+**When to use `bootstrap.local`:**
+- After a fresh install or database wipe
+- When adding a new provider to your deployment
+- To document your provider setup in a reproducible way
+
+**Environment variables:** Set API keys in your shell environment (`~/.zshenv`, `~/.bashrc`, or `.env`) and reference them with `$VAR_NAME` in `bootstrap.local`. They are passed to `curl` via shell expansion — they never touch disk in plaintext.
+
+Providers persist in the database — you only need to run `bootstrap.local` once per fresh deployment.
 
 ## Bootstrapping Your First Project
 
-Projects are registered via `config.yaml` under `projects:` (and persisted in the configuration DB when enabled).
+Projects are registered via `config.yaml` under `projects:` and persisted in the database.
 
 Required fields:
 - `id`, `name`, `git_repo`, `branch`, `beads_path`
