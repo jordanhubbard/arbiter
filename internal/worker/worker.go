@@ -409,9 +409,10 @@ func (w *Worker) buildSystemPrompt() string {
 		prompt += fmt.Sprintf("# Decision Making\n%s\n\n", persona.DecisionInstructions)
 	}
 
-	// Use text-based prompt for simple action mode, JSON for legacy
+	// Use simple JSON prompt for text mode (fewer actions, same JSON constraint),
+	// full JSON prompt for legacy mode.
 	if w.textMode {
-		prompt += fmt.Sprintf("# Required Output Format\n%s\n\n", actions.TextActionPrompt)
+		prompt += fmt.Sprintf("# Required Output Format\n%s\n\n", actions.SimpleJSONPrompt)
 	} else {
 		prompt += fmt.Sprintf("# Required Output Format\n%s\n\n", actions.ActionPrompt)
 	}
@@ -623,13 +624,10 @@ func (w *Worker) ExecuteTaskWithLoop(ctx context.Context, task *Task, config *Lo
 		trimmedMessages := w.handleTokenLimits(messages)
 
 		req := &provider.ChatCompletionRequest{
-			Model:       w.provider.Config.Model,
-			Messages:    trimmedMessages,
-			Temperature: 0.7,
-		}
-		// Only enforce JSON output for legacy JSON action mode
-		if !config.TextMode {
-			req.ResponseFormat = &provider.ResponseFormat{Type: "json_object"}
+			Model:          w.provider.Config.Model,
+			Messages:       trimmedMessages,
+			Temperature:    0.7,
+			ResponseFormat: &provider.ResponseFormat{Type: "json_object"},
 		}
 
 		log.Printf("[ActionLoop] Iteration %d/%d for task %s (messages: %d, textMode: %v)", iteration+1, maxIter, task.ID, len(trimmedMessages), config.TextMode)
@@ -665,11 +663,12 @@ func (w *Worker) ExecuteTaskWithLoop(ctx context.Context, task *Task, config *Lo
 			conversationCtx.AddMessage("assistant", llmResponse, resp.Usage.CompletionTokens)
 		}
 
-		// Parse actions — text mode uses regex parser, JSON mode uses strict decoder
+		// Parse actions — text mode uses simple JSON parser (10 actions),
+		// legacy mode uses full JSON decoder (60+ actions)
 		var env *actions.ActionEnvelope
 		var parseErr error
 		if config.TextMode {
-			env, parseErr = actions.ParseTextAction(llmResponse)
+			env, parseErr = actions.ParseSimpleJSON([]byte(llmResponse))
 		} else {
 			env, parseErr = actions.DecodeLenient([]byte(llmResponse))
 		}
