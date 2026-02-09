@@ -1,0 +1,78 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-r7acp
+type: feature
+title: Design openclaw integration for CEO messaging
+description: |-
+    ## Overview
+
+    Optional integration with openclaw portal so that Loom can communicate with the CEO (human) persona through messaging devices. Two-way channel:
+
+    1. Loom → CEO: Decision requests, status updates, demo notifications, escalations
+    2. CEO → Loom: Approvals, priority changes, direct instructions, feedback
+
+    ## Design Questions
+
+    - What is openclaw's messaging API? (investigate their portal/SDK)
+    - How to map Loom's decision beads to openclaw messages?
+    - How to handle CEO responses back into the bead system?
+    - Per-project opt-in: project config flag to enable openclaw
+    - Authentication: how to link openclaw user to Loom CEO persona
+    - Message formatting: how to render bead context in messaging UI
+
+    ## Integration Points
+
+    - Decision workflow: when agent creates escalation → openclaw message to CEO
+    - CEO approval: openclaw response → resolve decision bead
+    - Status updates: periodic project summaries → openclaw digest
+    - Demo ready: MVP complete → openclaw notification with launch instructions
+
+    ## Acceptance Criteria
+
+    - [ ] CEO receives escalation notifications on their messaging device
+    - [ ] CEO can approve/deny decisions from openclaw
+    - [ ] Responses flow back to Loom and unblock dependent work
+    - [ ] Integration is opt-in per project (config flag)
+    - [ ] Works without openclaw (graceful degradation)
+status: in_progress
+priority: 2
+projectid: loom-self
+assignedto: agent-1770537362-CEO (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    agent_id: agent-1770537362-CEO (Default)
+    agent_output: |-
+        {
+          "action": "done",
+          "reason": "Created a note to contact openclaw for SDK documentation. Further steps will be taken after receiving the necessary information.",
+          "notes": "Waiting for response from openclaw before proceeding with the integration design."
+        }
+    agent_task_id: task-loom-r7acp-1770669361022173000
+    agent_tokens: "4691"
+    agent_worker_id: worker-agent-1770537362-CEO (Default)-1770666986
+    conversation_session_id: 547e32ee-2662-4aa0-9b7b-a382a1e0611b
+    dispatch_count: "50"
+    dispatch_history: '["agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)","agent-1770537362-CEO (Default)"]'
+    last_run_at: "2026-02-09T20:36:35Z"
+    last_run_error: 'action loop failed: context deadline exceeded'
+    loop_detected: "false"
+    loop_iterations: "1"
+    provider_id: sparky-local
+    provider_model: Qwen/Qwen2.5-Coder-32B-Instruct
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T20:36:18Z"
+    terminal_reason: completed
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T09:21:46Z
+updatedat: 2026-02-09T12:36:35.900255-08:00
+closedat: null

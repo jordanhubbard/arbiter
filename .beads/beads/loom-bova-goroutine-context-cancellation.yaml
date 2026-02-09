@@ -3,12 +3,12 @@ entitymetadata:
     attributes: {}
     migratedat: null
     migratedfrom: ""
-id: loom-aedp
+id: loom-bova
 type: task
-title: Circular dependency detection
-description: Identify circular function calls and package import cycles
+title: Goroutine context cancellation
+description: Ensure all goroutines use context for cancellation and proper cleanup
 status: open
-priority: 1
+priority: 2
 projectid: loom-self
 assignedto: ""
 blockedby: []
@@ -19,10 +19,10 @@ children: []
 tags: []
 context:
     redispatch_requested: "true"
-    redispatch_requested_at: "2026-02-09T20:22:32Z"
+    redispatch_requested_at: "2026-02-09T20:22:55Z"
 duedate: null
 milestoneid: ""
 estimatedtime: 0
 createdat: 2026-02-06T15:24:36Z
-updatedat: 2026-02-09T12:22:32.459385-08:00
+updatedat: 2026-02-09T12:22:55.217593-08:00
 closedat: null

@@ -1,0 +1,52 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-6yswe
+type: task
+title: '[auto-filed] P0 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n- beads path missing: data/projects/loom-self/.beads\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: in_progress
+priority: 0
+projectid: loom-self
+assignedto: agent-1770537362-Code Reviewer (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    agent_id: agent-1770537362-Code Reviewer (Default)
+    agent_output: |-
+        {
+          "actions": [
+            {
+              "type": "read_tree",
+              "path": "."
+            }
+          ],
+          "notes": "I need to respond with a valid action that includes the required 'action' field. The system requires a proper action from the defined schema. 'read_tree' is a valid action type that allows examining directory contents. This is appropriate for continuing the investigation into the project readiness failure for loom-self. The goal is to understand the current project layout and identify where the missing .beads directory should be created to resolve the initialization issue. This action helps gather information for the CEO approval bead that was previously created."
+        }
+    agent_task_id: task-loom-6yswe-1770632719133829000
+    agent_tokens: "766887"
+    agent_worker_id: worker-agent-1770537362-Code Reviewer (Default)-1770630268
+    conversation_session_id: 5a190c36-cf53-4eb5-b50f-08499ce080c7
+    dispatch_count: "260"
+    dispatch_history: '["agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)","agent-1770537362-Code Reviewer (Default)"]'
+    last_run_at: "2026-02-09T15:39:21Z"
+    last_run_error: 'action loop failed: LLM call failed on iteration 1: failed to send request: Post "http://sparky.local:8000/v1/chat/completions": read tcp 10.11.101.61:61474->10.11.100.116:8000: read: connection reset by peer'
+    loop_detected: "false"
+    loop_iterations: "15"
+    provider_id: sparky-local
+    provider_model: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T09:55:57Z"
+    terminal_reason: max_iterations
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T09:36:44Z
+updatedat: 2026-02-09T07:39:21.40202-08:00
+closedat: null

@@ -1,0 +1,52 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-mvedn
+type: task
+title: '[auto-filed] P0 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n- beads path missing: data/projects/loom-self/.beads\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: in_progress
+priority: 0
+projectid: loom-self
+assignedto: agent-1770537362-Engineering Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    agent_id: agent-1770537362-Engineering Manager (Default)
+    agent_output: |-
+        {
+          "actions": [
+            {
+              "type": "git_status",
+              "notes": "Checking current git status to understand repository state and verify if remote is accessible or if we need to configure SSH access. This will help determine if the issue is with SSH configuration or repository setup."
+            }
+          ],
+          "notes": "Starting investigation into bead loom-mvedn. First step is to check the git status to assess the current state of the repository, particularly whether SSH access issues are preventing operations. This will help determine if we need to configure SSH or if the issue is elsewhere. Since the bead involves project readiness failure due to git remote access failure, verifying connectivity and configuration is critical before proceeding with any code changes."
+        }
+    agent_task_id: task-loom-mvedn-1770630169163855000
+    agent_tokens: "15514"
+    agent_worker_id: worker-agent-1770537362-Engineering Manager (Default)-1770630097
+    conversation_session_id: e241c5cc-23c1-4467-be1f-c738a6b0d969
+    dispatch_count: "1"
+    dispatch_history: '["agent-1770537362-Engineering Manager (Default)"]'
+    last_failed_at: "2026-02-09T09:43:05Z"
+    last_run_at: "2026-02-09T09:43:05Z"
+    loop_detected: "false"
+    loop_iterations: "4"
+    provider_id: sparky-local
+    provider_model: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T09:42:49Z"
+    terminal_reason: validation_failures
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T09:33:50Z
+updatedat: 2026-02-09T01:43:05.275125-08:00
+closedat: null

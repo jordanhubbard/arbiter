@@ -1,0 +1,48 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-8tw0
+type: task
+title: Assess concurrency safety
+description: Identify goroutine leaks and race‑prone code
+status: in_progress
+priority: 2
+projectid: loom-self
+assignedto: agent-1770537362-Project Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    agent_id: agent-1770537362-Project Manager (Default)
+    agent_output: |-
+        {
+          "action": "scope",
+          "path": "internal/loom",
+          "notes": "Exploring the 'internal/loom' directory to identify files related to concurrency and potential goroutine leaks or race conditions."
+        }
+    agent_task_id: task-loom-8tw0-1770669401226157000
+    agent_tokens: "118278"
+    agent_worker_id: worker-agent-1770537362-Project Manager (Default)-1770666986
+    conversation_session_id: 3ca013cf-c112-4a35-92d0-faeab38e7785
+    dispatch_count: "150"
+    dispatch_history: '["agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)","agent-1770537362-Project Manager (Default)"]'
+    last_run_at: "2026-02-09T21:03:25Z"
+    last_run_error: 'action loop failed: context deadline exceeded'
+    loop_detected: "false"
+    loop_iterations: "15"
+    provider_id: sparky-local
+    provider_model: Qwen/Qwen2.5-Coder-32B-Instruct
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T20:33:05Z"
+    terminal_reason: max_iterations
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-06T14:23:40Z
+updatedat: 2026-02-09T13:03:25.42012-08:00
+closedat: null

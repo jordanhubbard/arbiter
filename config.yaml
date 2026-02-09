@@ -58,6 +58,7 @@ security:
     - "*"  # CORS - adjust in production
   # api_keys:
   #   - "your-api-key-here"
+  openclaw_enabled: false  # Per-project opt-in for openclaw integration
 
 temporal:
   host: localhost:7233

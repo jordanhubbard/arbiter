@@ -3,10 +3,10 @@ entitymetadata:
     attributes: {}
     migratedat: null
     migratedfrom: ""
-id: loom-aedp
-type: task
-title: Circular dependency detection
-description: Identify circular function calls and package import cycles
+id: loom-ye2mh
+type: bug
+title: 'Port mismatch: loom listens on 8081 but compose maps 8080'
+description: Loom API binds to :8081 (main.go:161) but docker-compose exposes 8080:8080. The UI is unreachable on the host. Either change the app to listen on 8080 or fix the compose port mapping to 8080:8081.
 status: open
 priority: 1
 projectid: loom-self
@@ -23,6 +23,6 @@ context:
 duedate: null
 milestoneid: ""
 estimatedtime: 0
-createdat: 2026-02-06T15:24:36Z
-updatedat: 2026-02-09T12:22:32.459385-08:00
+createdat: 2026-02-07T03:19:16Z
+updatedat: 2026-02-09T12:22:32.442839-08:00
 closedat: null

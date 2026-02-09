@@ -1,0 +1,83 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-uc227
+type: task
+title: '[auto-filed] P0 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n- beads path missing: data/projects/loom-self/.beads\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: in_progress
+priority: 0
+projectid: loom-self
+assignedto: agent-1770537362-Devops Engineer (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    agent_id: agent-1770537362-Devops Engineer (Default)
+    agent_output: |-
+        {
+          "actions": [
+            {
+              "type": "search_text",
+              "query": "git remote access failed",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": "ssh_askpass",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": "ssh-askpass",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": "host key verification failed",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": "Could not read from remote repository",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": "beads path missing",
+              "path": "."
+            },
+            {
+              "type": "search_text",
+              "query": ".beads",
+              "path": "."
+            }
+          ],
+          "notes": "Searching for relevant error messages in the bug report to locate configuration files, CI/CD scripts, or documentation related to git authentication, SSH setup, or bead initialization. These terms are likely to appear in setup scripts, CI configurations, or project documentation. No results expected yet, but this will help identify where authentication or setup issues might be defined."
+        }
+    agent_task_id: task-loom-uc227-1770630185287553000
+    agent_tokens: "16952"
+    agent_worker_id: worker-agent-1770537362-Devops Engineer (Default)-1770630097
+    conversation_session_id: bae2203b-5911-40a2-94a3-00b1e4031d76
+    dispatch_count: "1"
+    dispatch_history: '["agent-1770537362-Devops Engineer (Default)"]'
+    last_failed_at: "2026-02-09T09:43:38Z"
+    last_run_at: "2026-02-09T09:43:38Z"
+    loop_detected: "false"
+    loop_iterations: "4"
+    provider_id: sparky-local
+    provider_model: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T09:43:05Z"
+    terminal_reason: validation_failures
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T09:29:18Z
+updatedat: 2026-02-09T01:43:38.777638-08:00
+closedat: null

@@ -1,0 +1,39 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-z6pu8
+type: bug
+title: '[auto-filed] P0 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n- beads path missing: data/projects/loom-self/.beads\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: in_progress
+priority: 0
+projectid: loom-self
+assignedto: agent-1770515004-Code Reviewer (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags:
+    - auto-filed
+    - readiness
+    - p0
+context:
+    agent_id: agent-1770515004-Code Reviewer (Default)
+    conversation_session_id: 5992ed89-f3be-4256-8a11-a74191c52885
+    dispatch_count: "103"
+    dispatch_history: '["agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)","agent-1770515004-Code Reviewer (Default)"]'
+    last_run_at: "2026-02-09T16:24:40Z"
+    last_run_error: 'action loop failed: context deadline exceeded'
+    loop_detected: "false"
+    provider_id: sparky-local
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T13:09:11Z"
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T05:09:08.114001-08:00
+updatedat: 2026-02-09T08:24:40.618582-08:00
+closedat: null

@@ -1,0 +1,30 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-tbhei
+type: task
+title: '[auto-filed] P0 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n- beads path missing: data/projects/loom-self/.beads\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: in_progress
+priority: 0
+projectid: loom-self
+assignedto: agent-1770537362-Code Reviewer (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    conversation_session_id: 95ddfd57-1f5a-4275-b9e6-110980bc1efe
+    dispatch_count: "1"
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T09:44:04Z"
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T08:38:53Z
+updatedat: 2026-02-09T01:44:04.076831-08:00
+closedat: null

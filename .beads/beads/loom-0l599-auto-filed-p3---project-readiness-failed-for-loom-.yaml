@@ -1,0 +1,29 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-0l599
+type: bug
+title: '[auto-filed] P3 - Project readiness failed for loom-self'
+description: "Project readiness failed for loom-self.\n\nIssues:\n- git remote access failed: git ls-remote failed: exit status 128: ssh_askpass: exec(/usr/X11R6/bin/ssh-askpass): No such file or directory\r\nHost key verification failed.\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\nProject SSH public key (register this with your git host):\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqhB8uG2MZxybZL5qctdKkKKN8AHxGxonTQOK0vFnvd jkh@plubbit.local"
+status: open
+priority: 3
+projectid: loom-self
+assignedto: ""
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags:
+    - auto-filed
+    - readiness
+    - p0
+context: {}
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T12:22:32.417778-08:00
+updatedat: 2026-02-09T12:22:32.438438-08:00
+closedat: null

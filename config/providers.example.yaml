@@ -58,6 +58,15 @@ providers:
     model: custom-model-name
     enabled: false
 
+  # Openclaw Portal
+  - id: openclaw
+    name: Openclaw Portal
+    type: openclaw
+    endpoint: https://api.openclaw.com/v1
+    api_key: ${OPENCLAW_API_KEY}
+    model: openclaw-messaging
+    enabled: false
+
 # Worker pool configuration
 worker_pool:
   max_workers: 10  # Maximum number of concurrent workers

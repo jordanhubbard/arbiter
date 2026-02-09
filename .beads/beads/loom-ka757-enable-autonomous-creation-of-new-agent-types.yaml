@@ -1,0 +1,28 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-ka757
+type: feature
+title: Enable autonomous creation of new agent types
+description: 'Add the ability for loom to autonomously create entirely new agent types when best practices evolve or new needs are discovered. This should include: 1) A persona template system that agents can use to define new persona files, 2) A validation step to ensure new personas don''t overlap >90% with existing ones, 3) Auto-registration of new agent types into the worker pool, 4) A governance workflow where the CEO agent approves new agent type creation, 5) Persistence of newly created personas to the project''s personas directory. The entire flow should be fully autonomous - no human intervention required.'
+status: open
+priority: 2
+projectid: loom-self
+assignedto: ""
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    redispatch_requested: "true"
+    redispatch_requested_at: "2026-02-09T20:22:55Z"
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T03:21:06Z
+updatedat: 2026-02-09T12:22:55.207311-08:00
+closedat: null

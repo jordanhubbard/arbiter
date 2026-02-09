@@ -76,7 +76,7 @@ services:
       temporal:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "8080:8081"
       - "3307:3307"     # Dolt SQL server for beads federation
     environment:
       - LOOM_PASSWORD=${LOOM_PASSWORD}

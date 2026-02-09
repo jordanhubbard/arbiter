@@ -3,10 +3,10 @@ entitymetadata:
     attributes: {}
     migratedat: null
     migratedfrom: ""
-id: loom-8a2
+id: loom-6ozq
 type: task
-title: Update Analytics for New Actions
-description: Track usage of all new actions in analytics system for visibility into which actions agents use most.
+title: Detect circular dependencies
+description: Search for circular function calls and package imports.
 status: open
 priority: 2
 projectid: loom-self
@@ -16,16 +16,13 @@ blocks: []
 relatedto: []
 parent: ""
 children: []
-tags:
-    - agentic
-    - analytics
-    - monitoring
+tags: []
 context:
     redispatch_requested: "true"
     redispatch_requested_at: "2026-02-09T08:16:16Z"
 duedate: null
 milestoneid: ""
 estimatedtime: 0
-createdat: 2026-02-04T01:41:15Z
-updatedat: 2026-02-09T00:16:16.4312-08:00
+createdat: 2026-02-06T13:46:10Z
+updatedat: 2026-02-09T00:16:16.417958-08:00
 closedat: null

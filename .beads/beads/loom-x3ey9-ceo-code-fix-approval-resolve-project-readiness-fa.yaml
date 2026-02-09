@@ -1,0 +1,55 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: loom-x3ey9
+type: decision
+title: '[CEO] Code Fix Approval: Resolve Project Readiness Failure for loom-self'
+description: |-
+    ## Code Fix Proposal
+
+    **Original Bug:** loom-tbhei
+
+    ### Root Cause Analysis
+    The project readiness check for loom-self failed due to two primary issues:
+    1. **Git SSH Access Failure**: The system could not authenticate with the remote repository due to a missing `ssh-askpass` binary, resulting in `git ls-remote` failing with exit status 128. This prevented the system from fetching remote references.
+    2. **Missing `.beads` Directory**: The path `data/projects/loom-self/.beads` was reported as missing, which is required for project metadata tracking in the self-improvement system.
+
+    While SSH keys (`id_ed25519` and `id_ed25519.pub`) were present and correctly formatted, the authentication failure likely stems from environment limitations (e.g., headless environment without X11, making `ssh-askpass` unusable). Additionally, the `.beads` directory may not have been created during setup.
+
+    ### Proposed Fix
+    1. **Address SSH Authentication Issue**: Since `ssh-askpass` is unavailable and likely unnecessary in a CI/CD context, configure Git to use SSH key-based authentication directly without interactive prompts. This can be done by adding an SSH config that disables askpass and ensures non-interactive mode.
+    2. **Ensure `.beads` Directory Exists**: Create the missing `.beads` directory in the correct location to satisfy project readiness.
+
+    ### Changes Required
+    - Create `.beads` directory
+    - Add global Git config to disable `ssh-askpass` and allow non-interactive SSH operations
+
+    ### Risk Assessment
+    **Risk Level:** Low
+    **Side Effects:** Minimal; changes are defensive and improve reliability without altering core functionality.
+    **Testing:** The fix will be validated by re-running the project readiness check after applying the changes.
+
+    ### Recommendation
+    I recommend approval because this fix resolves a blocking infrastructure issue that prevents the self-improvement system from initializing. The changes are minimal, safe, and necessary for the system to progress toward autonomous improvement. Without this, the project cannot proceed with builds, tests, or deployments due to automated readiness gates failing.
+
+    This is not a code bug per se but a system configuration issue critical to project viability. The fix enables future automated operations and aligns with the project's self-improvement mandate.
+status: closed
+priority: 0
+projectid: loom-self
+assignedto: ""
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    close_reason: CEO approval bead created successfully; awaiting review.
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-09T00:57:04.26273-08:00
+updatedat: 2026-02-09T00:57:14.613847-08:00
+closedat: 2026-02-09T00:57:14.613846-08:00
