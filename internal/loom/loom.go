@@ -1342,9 +1342,9 @@ func (a *Loom) maybeFileReadinessBead(project *models.Project, issues []string, 
 	}
 
 	bead, err := a.CreateBead(
-		fmt.Sprintf("[auto-filed] P0 - Project readiness failed for %s", project.ID),
+		fmt.Sprintf("[auto-filed] P3 - Project readiness failed for %s", project.ID),
 		description,
-		models.BeadPriorityP0,
+		models.BeadPriorityP3, // Readiness failures need human config (SSH keys), not agent work
 		"bug",
 		project.ID,
 	)
