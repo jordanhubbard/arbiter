@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -944,42 +946,83 @@ func (d *Dispatcher) providersModel(providerID string) string {
 }
 
 func buildBeadDescription(b *models.Bead) string {
-	return fmt.Sprintf("Work on bead %s: %s", b.ID, b.Title)
+	return fmt.Sprintf("Work on bead %s: %s\n\n%s", b.ID, b.Title, b.Description)
 }
 
 func buildBeadContext(b *models.Bead, p *models.Project) string {
-	ctx := ""
+	var sb strings.Builder
+
+	// Project identity and context
 	if p != nil {
-		ctx += fmt.Sprintf("Project: %s (%s)\nBranch: %s\n\n", p.Name, p.ID, p.Branch)
+		sb.WriteString(fmt.Sprintf("Project: %s (%s)\nBranch: %s\n", p.Name, p.ID, p.Branch))
+
+		// Build/test commands
 		if len(p.Context) > 0 {
-			ctx += "Project Context:\n"
 			for k, v := range p.Context {
-				ctx += fmt.Sprintf("- %s: %s\n", k, v)
+				sb.WriteString(fmt.Sprintf("%s: %s\n", k, v))
 			}
-			ctx += "\n"
+		}
+		sb.WriteString("\n")
+
+		// Find project work directory: WorkDir if set, otherwise standard clone path
+		workDir := p.WorkDir
+		if workDir == "" {
+			// Standard clone location inside container
+			workDir = filepath.Join("data", "projects", p.ID)
+		}
+
+		// Read AGENTS.md from project (like Claude Code reads it automatically)
+		agentsMD := readProjectFile(workDir, "AGENTS.md", 4000)
+		if agentsMD != "" {
+			sb.WriteString("## Project Instructions (AGENTS.md)\n\n")
+			sb.WriteString(agentsMD)
+			sb.WriteString("\n\n")
 		}
 	}
 
-	ctx += fmt.Sprintf("Bead ID: %s\nType: %s\nPriority: P%d\nStatus: %s\n\n", b.ID, b.Type, b.Priority, b.Status)
-	ctx += "Bead Description:\n"
-	ctx += b.Description + "\n\n"
+	// Bead metadata
+	sb.WriteString(fmt.Sprintf("Bead: %s (P%d %s)\n", b.ID, b.Priority, b.Type))
 
 	if len(b.Context) > 0 {
-		ctx += "Bead Context:\n"
 		for k, v := range b.Context {
-			ctx += fmt.Sprintf("- %s: %s\n", k, v)
+			sb.WriteString(fmt.Sprintf("- %s: %s\n", k, v))
 		}
-		ctx += "\n"
 	}
 
-	// Add specialized instructions for auto-filed bugs
-	if isAutoFiledBug(b) {
-		ctx += buildBugInvestigationInstructions(b)
-	} else {
-		ctx += "Output format:\n"
-		ctx += "1) Short plan\n2) Key questions/risks\n3) Concrete next actions (commands/files to change)\n4) Proposed patch snippets if applicable\n"
+	// Directive: act, don't plan
+	sb.WriteString(`
+## Instructions
+
+You are an autonomous coding agent. Your job is to MAKE CHANGES, not analyze.
+
+Workflow:
+1. Read the relevant files (1-3 files max, not the whole codebase)
+2. Make the change (edit, write)
+3. Build to verify (build)
+4. Test to verify (test)
+5. Commit and push (git_commit, git_push)
+6. Close the bead (close_bead)
+
+DO NOT spend more than 2-3 iterations reading. Start editing by iteration 3-4.
+If unsure where to make changes, search for the most relevant keyword, read that file, and edit it.
+Every bead should result in at least one commit.
+`)
+
+	return sb.String()
+}
+
+// readProjectFile reads a file from the project work directory, truncated to maxLen.
+func readProjectFile(workDir, filename string, maxLen int) string {
+	path := filepath.Join(workDir, filename)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
 	}
-	return ctx
+	content := string(data)
+	if len(content) > maxLen {
+		content = content[:maxLen] + "\n... (truncated)"
+	}
+	return content
 }
 
 // isAutoFiledBug checks if a bead is an auto-filed bug
