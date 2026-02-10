@@ -19,8 +19,9 @@ no-daemon: true
 # Disable auto-flush of database to JSONL after mutations
 # no-auto-flush: false
 
-# Disable auto-import from JSONL when it's newer than database
-# no-auto-import: false
+# Disable auto-import — Dolt is the source of truth, not JSONL.
+# JSONL is exported from Dolt (not imported into it).
+no-auto-import: true
 
 # Enable JSON output by default
 # json: false
