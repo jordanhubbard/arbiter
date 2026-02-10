@@ -104,31 +104,10 @@ func main() {
 
 	go arb.StartMaintenanceLoop(runCtx)
 
-	// Fallback Ralph Loop: drain all dispatchable work when Temporal is unavailable.
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-runCtx.Done():
-				return
-			case <-ticker.C:
-				if arb.GetTemporalManager() == nil {
-					for i := 0; i < 50; i++ {
-						dr, err := arb.GetDispatcher().DispatchOnce(runCtx, "")
-						if err != nil {
-							log.Printf("[Ralph-fallback] Dispatch error: %v", err)
-							break
-						}
-						if dr == nil || !dr.Dispatched {
-							break
-						}
-					}
-				}
-			}
-		}
-	}()
+	// Ralph dispatch loop: drain all dispatchable work every 10 seconds.
+	// Runs alongside the Temporal LoomHeartbeatWorkflow (which also dispatches)
+	// as a reliable fallback — DispatchOnce is idempotent.
+	go arb.StartDispatchLoop(runCtx, 10*time.Second)
 
 	// Initialize auth manager (JWT + API key support)
 	authManager := auth.NewManager(cfg.Security.JWTSecret)
