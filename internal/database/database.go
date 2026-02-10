@@ -643,8 +643,8 @@ func (d *Database) UpsertProvider(provider *internalmodels.Provider) error {
 	provider.UpdatedAt = time.Now()
 
 	query := `
-		INSERT INTO providers (id, name, type, endpoint, model, configured_model, selected_model, selection_reason, model_score, selected_gpu, description, requires_key, key_id, owner_id, is_shared, status, last_heartbeat_at, last_heartbeat_latency_ms, last_heartbeat_error, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO providers (id, name, type, endpoint, model, configured_model, selected_model, selection_reason, model_score, selected_gpu, description, requires_key, key_id, owner_id, is_shared, status, last_heartbeat_at, last_heartbeat_latency_ms, last_heartbeat_error, context_window, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			name = excluded.name,
 			type = excluded.type,
@@ -664,6 +664,7 @@ func (d *Database) UpsertProvider(provider *internalmodels.Provider) error {
 			last_heartbeat_at = excluded.last_heartbeat_at,
 			last_heartbeat_latency_ms = excluded.last_heartbeat_latency_ms,
 			last_heartbeat_error = excluded.last_heartbeat_error,
+			context_window = excluded.context_window,
 			updated_at = excluded.updated_at
 	`
 
@@ -687,6 +688,7 @@ func (d *Database) UpsertProvider(provider *internalmodels.Provider) error {
 		provider.LastHeartbeatAt,
 		provider.LastHeartbeatLatencyMs,
 		provider.LastHeartbeatError,
+		provider.ContextWindow,
 		provider.CreatedAt,
 		provider.UpdatedAt,
 	)
@@ -724,7 +726,7 @@ func (d *Database) DeleteAllAgents() error {
 // GetProvider retrieves a provider by ID
 func (d *Database) GetProvider(id string) (*internalmodels.Provider, error) {
 	query := `
-		SELECT id, name, type, endpoint, model, configured_model, selected_model, selection_reason, model_score, selected_gpu, description, requires_key, key_id, status, last_heartbeat_at, last_heartbeat_latency_ms, last_heartbeat_error, created_at, updated_at
+		SELECT id, name, type, endpoint, model, configured_model, selected_model, selection_reason, model_score, selected_gpu, description, requires_key, key_id, status, last_heartbeat_at, last_heartbeat_latency_ms, last_heartbeat_error, context_window, created_at, updated_at
 		FROM providers
 		WHERE id = ?
 	`
@@ -748,6 +750,7 @@ func (d *Database) GetProvider(id string) (*internalmodels.Provider, error) {
 		&provider.LastHeartbeatAt,
 		&provider.LastHeartbeatLatencyMs,
 		&provider.LastHeartbeatError,
+		&provider.ContextWindow,
 		&provider.CreatedAt,
 		&provider.UpdatedAt,
 	)
