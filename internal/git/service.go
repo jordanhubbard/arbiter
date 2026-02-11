@@ -142,11 +142,9 @@ type CommitResult struct {
 func (s *GitService) Commit(ctx context.Context, req CommitRequest) (*CommitResult, error) {
 	startTime := time.Now()
 
-	// Validate commit message
-	if err := validateCommitMessage(req.Message, req.BeadID, req.AgentID); err != nil {
-		s.auditLogger.LogOperation("commit", req.BeadID, "", false, err)
-		return nil, fmt.Errorf("invalid commit message: %w", err)
-	}
+	// Auto-inject bead and agent metadata into commit message.
+	// Agents provide the summary; we append the trailers.
+	req.Message = ensureCommitMetadata(req.Message, req.BeadID, req.AgentID)
 
 	// Stage files
 	if err := s.stageFiles(ctx, req.Files, req.AllowAll); err != nil {
@@ -504,30 +502,33 @@ func validateBranchNameWithPrefix(branchName, prefix string) error {
 	return nil
 }
 
-// validateCommitMessage validates commit message format
-func validateCommitMessage(message, beadID, agentID string) error {
+// ensureCommitMetadata auto-appends bead/agent trailers if not present,
+// and truncates the summary line if too long. Agents just provide the
+// human-readable summary; we handle the metadata.
+// ensureCommitMetadata auto-appends bead/agent trailers if not present,
+// and truncates the summary line if too long. Agents just provide the
+// human-readable summary; we handle the metadata.
+func ensureCommitMetadata(message, beadID, agentID string) string {
 	if message == "" {
-		return fmt.Errorf("commit message cannot be empty")
+		message = "Update from agent"
 	}
 
-	// Check for bead reference
-	if !strings.Contains(message, fmt.Sprintf("Bead: %s", beadID)) &&
-		!strings.Contains(message, beadID) {
-		return fmt.Errorf("commit message must include bead reference")
+	// Truncate first line to 72 chars if needed
+	lines := strings.SplitN(message, "\n", 2)
+	if len(lines[0]) > 72 {
+		lines[0] = lines[0][:69] + "..."
+	}
+	message = strings.Join(lines, "\n")
+
+	// Append trailers if not already present
+	if beadID != "" && !strings.Contains(message, beadID) {
+		message += fmt.Sprintf("\n\nBead: %s", beadID)
+	}
+	if agentID != "" && !strings.Contains(message, "Agent:") {
+		message += fmt.Sprintf("\nAgent: %s", agentID)
 	}
 
-	// Check for agent attribution
-	if !strings.Contains(message, "Agent:") && !strings.Contains(message, "Co-Authored-By:") {
-		return fmt.Errorf("commit message must include agent attribution")
-	}
-
-	// Check first line length
-	firstLine := strings.Split(message, "\n")[0]
-	if len(firstLine) > 72 {
-		return fmt.Errorf("commit message summary too long (max 72 chars)")
-	}
-
-	return nil
+	return message
 }
 
 // isProtectedBranch checks if a branch is protected
