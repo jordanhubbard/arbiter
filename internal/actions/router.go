@@ -126,6 +126,11 @@ func (r *Router) Execute(ctx context.Context, env *ActionEnvelope, actx ActionCo
 		return nil, fmt.Errorf("action envelope is nil")
 	}
 
+	// Inject project ID into context so git operations can resolve the work directory
+	if actx.ProjectID != "" {
+		ctx = WithProjectID(ctx, actx.ProjectID)
+	}
+
 	results := make([]Result, 0, len(env.Actions))
 	for _, action := range env.Actions {
 		result := r.executeAction(ctx, action, actx)
