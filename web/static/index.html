@@ -19,7 +19,10 @@
     <header>
         <div class="header-top">
             <h1><span aria-hidden="true">🧵</span> Loom - Autonomous Agent Orchestration</h1>
-            <button type="button" class="icon-button" id="password-btn" onclick="showChangePasswordModal()" title="Change password" aria-label="Change password">🔐</button>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span id="health-pill" title="Backend: checking..." style="display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.8rem;font-weight:600;cursor:default;background:#888;color:#fff;">...</span>
+                <button type="button" class="icon-button" id="password-btn" onclick="showChangePasswordModal()" title="Change password" aria-label="Change password">🔐</button>
+            </div>
         </div>
         <div id="system-status" class="system-status" aria-live="polite" aria-atomic="true"></div>
         <nav aria-label="Primary">
@@ -88,6 +91,22 @@
                 </div>
             </div>
             <div id="project-view-details" class="project-view-details"></div>
+
+            <!-- D3 dashboard overview -->
+            <div class="analytics-summary" style="margin: 1rem 0;">
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Agent Status</h3>
+                    <div id="d3-home-agent-ring"></div>
+                </div>
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Bead Distribution</h3>
+                    <div id="d3-home-bead-treemap" style="width:100%;"></div>
+                </div>
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Provider Health</h3>
+                    <div id="d3-home-provider-ring"></div>
+                </div>
+            </div>
 
             <h3>Beads</h3>
             <div class="kanban-container">
@@ -235,6 +254,16 @@
             <div class="controls">
                 <button type="button" onclick="showRegisterProviderModal()" aria-haspopup="dialog">Register Provider</button>
             </div>
+            <div class="analytics-summary" style="margin-bottom: 1rem;">
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Health Overview</h3>
+                    <div id="d3-providers-health-ring"></div>
+                </div>
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Heartbeat Latency</h3>
+                    <div id="d3-providers-latency-bar" class="chart" style="width:100%;"></div>
+                </div>
+            </div>
             <div id="provider-list" class="provider-container">
                 <!-- Providers will be loaded here -->
             </div>
@@ -252,6 +281,16 @@
                         <label for="agent-search">Search agents</label>
                         <input type="text" id="agent-search" placeholder="Search by name or persona…" autocomplete="off">
                     </div>
+                </div>
+            </div>
+            <div class="analytics-summary" style="margin-bottom: 1rem;">
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Status Overview</h3>
+                    <div id="d3-agents-status-ring"></div>
+                </div>
+                <div class="analytics-card" style="display:flex;flex-direction:column;align-items:center;">
+                    <h3>Workload by Agent</h3>
+                    <div id="d3-agents-workload-donut"></div>
                 </div>
             </div>
             <div id="agent-list" class="agent-container">
@@ -542,6 +581,11 @@
                     <div class="analytics-label">requests</div>
                 </div>
                 <div class="analytics-card">
+                    <h3>Total Tokens</h3>
+                    <div class="analytics-value" id="analytics-total-tokens">-</div>
+                    <div class="analytics-label">tokens</div>
+                </div>
+                <div class="analytics-card">
                     <h3>Total Cost</h3>
                     <div class="analytics-value" id="analytics-total-cost">-</div>
                     <div class="analytics-label">USD</div>
@@ -553,37 +597,56 @@
                 </div>
                 <div class="analytics-card">
                     <h3>Error Rate</h3>
-                    <div class="analytics-value" id="analytics-error-rate">-</div>
-                    <div class="analytics-label">%</div>
+                    <div id="analytics-error-gauge" style="display:flex;justify-content:center;"></div>
                 </div>
             </div>
 
-            <!-- Cost Breakdown -->
+            <!-- Provider Overview — donuts + bars -->
+            <div class="analytics-section">
+                <h3>Provider Overview</h3>
+                <div class="analytics-charts" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="chart-container" style="display:flex;flex-direction:column;align-items:center;">
+                        <h4>Requests by Provider</h4>
+                        <div id="d3-donut-requests-provider"></div>
+                    </div>
+                    <div class="chart-container" style="display:flex;flex-direction:column;align-items:center;">
+                        <h4>Tokens by Provider</h4>
+                        <div id="d3-donut-tokens-provider"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Avg Latency by Provider</h4>
+                        <div id="d3-bar-latency-provider" class="chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Workload -->
+            <div class="analytics-section">
+                <h3>Agent Workload</h3>
+                <div class="analytics-charts">
+                    <div class="chart-container">
+                        <h4>Requests by Agent</h4>
+                        <div id="d3-bar-requests-agent" class="chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Tokens by Agent</h4>
+                        <div id="d3-bar-tokens-agent" class="chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown (kept for when pricing is configured) -->
             <div class="analytics-section">
                 <h3>Cost Breakdown</h3>
+                <p class="small" style="margin-bottom:1rem;">Cost tracking is active. Configure <code>cost_per_token</code> on providers to see real costs.</p>
                 <div class="analytics-charts">
                     <div class="chart-container">
                         <h4>Cost by Provider</h4>
                         <div id="chart-cost-by-provider" class="chart"></div>
                     </div>
                     <div class="chart-container">
-                        <h4>Cost by User</h4>
+                        <h4>Cost by Agent</h4>
                         <div id="chart-cost-by-user" class="chart"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Usage Stats -->
-            <div class="analytics-section">
-                <h3>Usage Statistics</h3>
-                <div class="analytics-charts">
-                    <div class="chart-container">
-                        <h4>Requests by Provider</h4>
-                        <div id="chart-requests-by-provider" class="chart"></div>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Requests by User</h4>
-                        <div id="chart-requests-by-user" class="chart"></div>
                     </div>
                 </div>
             </div>
@@ -896,6 +959,8 @@
         <p>Loom v1.0.0 | <a href="/api/v1/health">API Health</a> | <a href="/api/openapi.yaml">OpenAPI Spec</a></p>
     </footer>
 
+    <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+    <script src="/static/js/d3-charts.js?v=1"></script>
     <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
     <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
     <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>

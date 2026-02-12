@@ -44,6 +44,36 @@ function showBackendBanner(show) {
     }
 }
 
+// Health check pill — polls /health every 60s
+const HEALTH_CHECK_INTERVAL = 60000;
+let lastHealthData = null;
+
+async function checkBackendHealth() {
+    const pill = document.getElementById('health-pill');
+    if (!pill) return;
+    try {
+        const resp = await fetch('/health', { signal: AbortSignal.timeout(5000) });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        lastHealthData = data;
+        const ok = data.status === 'healthy';
+        pill.style.background = ok ? '#2e7d32' : '#d32f2f';
+        pill.textContent = ok ? 'Healthy' : data.status || 'Unhealthy';
+        pill.title = `Backend: ${data.status} | Uptime: ${Math.floor((data.uptime_seconds || 0) / 60)}m | v${data.version || '?'}`;
+        if (backendDown) setBackendDown(false);
+    } catch {
+        pill.style.background = '#d32f2f';
+        pill.textContent = 'Offline';
+        pill.title = 'Backend: unreachable';
+        setBackendDown(true);
+    }
+}
+
+function startHealthCheck() {
+    checkBackendHealth();
+    setInterval(checkBackendHealth, HEALTH_CHECK_INTERVAL);
+}
+
 // State
 let state = {
     beads: [],
@@ -57,6 +87,7 @@ let state = {
     users: [],
     apiKeys: []
 };
+window.state = state;
 
 let uiState = {
     view: {
@@ -116,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAll();
         startEventStream();
         startAutoRefresh();
+        startHealthCheck();
         console.log('[Loom] Initialization complete');
     } catch (error) {
         console.error('[Loom] Initialization failed:', error);
@@ -336,6 +368,9 @@ function setupNavActiveState() {
 function initViewTabs() {
     const tabs = Array.from(document.querySelectorAll('.view-tab'));
     const panels = Array.from(document.querySelectorAll('.view-panel'));
+
+    // Exposed globally so viewProject() and other functions can switch tabs
+    window.activateViewTab = activate;
 
     function activate(id) {
         uiState.view.active = id;
@@ -849,6 +884,50 @@ function renderProjectViewer() {
     const assignmentsEl = document.getElementById('project-agent-assignments');
     if (assignmentsEl) {
         assignmentsEl.style.display = 'none';
+    }
+
+    // D3 dashboard widgets
+    if (typeof LoomCharts !== 'undefined') {
+        // Agent status ring
+        const ringEl = document.getElementById('d3-home-agent-ring');
+        if (ringEl) {
+            const statusCounts = {};
+            (state.agents || []).forEach(function (a) {
+                const s = a.status || 'unknown';
+                statusCounts[s] = (statusCounts[s] || 0) + 1;
+            });
+            LoomCharts.statusRing(ringEl, statusCounts, { size: 140, centerLabel: 'agents' });
+        }
+
+        // Bead distribution treemap
+        const tmEl = document.getElementById('d3-home-bead-treemap');
+        if (tmEl) {
+            const beadsByProject = {};
+            (state.beads || []).forEach(function (b) {
+                const pid = resolveProjectName(b.project_id) || b.project_id || 'unassigned';
+                if (!beadsByProject[pid]) beadsByProject[pid] = { open: 0, in_progress: 0, closed: 0 };
+                beadsByProject[pid][b.status] = (beadsByProject[pid][b.status] || 0) + 1;
+            });
+            const tmData = [];
+            Object.keys(beadsByProject).forEach(function (p) {
+                var counts = beadsByProject[p];
+                if (counts.open) tmData.push({ label: p + ' open', value: counts.open, status: 'open' });
+                if (counts.in_progress) tmData.push({ label: p + ' in progress', value: counts.in_progress, status: 'in_progress' });
+                if (counts.closed) tmData.push({ label: p + ' closed', value: counts.closed, status: 'closed' });
+            });
+            if (tmData.length) LoomCharts.treemap(tmEl, tmData, { height: 140 });
+        }
+
+        // Provider health ring
+        const provRing = document.getElementById('d3-home-provider-ring');
+        if (provRing) {
+            const provCounts = {};
+            (state.providers || []).forEach(function (p) {
+                var s = p.status || 'unknown';
+                provCounts[s] = (provCounts[s] || 0) + 1;
+            });
+            LoomCharts.statusRing(provRing, provCounts, { size: 140, centerLabel: 'providers' });
+        }
     }
 }
 
@@ -1670,11 +1749,19 @@ function renderProviders() {
             const deleteKey = `deleteProvider:${id}`;
             const negotiateKey = `providerNegotiate:${id}`;
 
+            const isHealthy = status === 'healthy' || status === 'active';
+            const pillColor = isHealthy ? '#2e7d32' : status === 'pending' ? '#f57c00' : '#d32f2f';
+            const pillLabel = isHealthy ? 'Healthy' : status.charAt(0).toUpperCase() + status.slice(1);
+            const latencyStr = heartbeatLatency !== null && heartbeatLatency !== 0 ? `${heartbeatLatency}ms` : '';
+
             return `
                 <div class="provider-card">
                     <div class="provider-header">
                         <div><strong>${name}</strong><div class="small">${id}</div></div>
-                        <div><span class="badge">${escapeHtml(p.type || '')}</span></div>
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span style="display:inline-block;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;background:${pillColor};color:#fff;">${escapeHtml(pillLabel)}${latencyStr ? ' · ' + escapeHtml(latencyStr) : ''}</span>
+                            <span class="badge">${escapeHtml(p.type || '')}</span>
+                        </div>
                     </div>
                     <div class="small"><strong>Endpoint:</strong> ${endpoint}</div>
                     ${endpointWarning ? `<div class="small" style="color: var(--warning-color);"><strong>Warning:</strong> ${escapeHtml(endpointWarning)}</div>` : ''}
@@ -1684,9 +1771,7 @@ function renderProviders() {
                     <div class="small"><strong>Selection reason:</strong> ${selectionReason || '<em>pending</em>'}</div>
                     <div class="small"><strong>Model score:</strong> ${modelScore !== null ? escapeHtml(modelScore.toFixed(2)) : '<em>n/a</em>'}</div>
                     <div class="small"><strong>Selected GPU:</strong> ${selectedGpu || '<em>n/a</em>'}</div>
-                    <div class="small"><strong>Status:</strong> ${status}</div>
-                    <div class="small"><strong>Heartbeat latency:</strong> ${heartbeatLatency !== null && heartbeatLatency !== 0 ? `${escapeHtml(String(heartbeatLatency))}ms` : '<em>n/a</em>'}</div>
-                    ${heartbeatError ? `<div class="small"><strong>Heartbeat error:</strong> ${heartbeatError}</div>` : ''}
+                    ${heartbeatError ? `<div class="small" style="color:var(--danger-color);"><strong>Heartbeat error:</strong> ${heartbeatError}</div>` : ''}
                     <div class="provider-actions">
                         <button type="button" class="secondary" onclick="fetchProviderModels('${id}')" ${isBusy(modelsKey) ? 'disabled' : ''}>${isBusy(modelsKey) ? 'Loading…' : 'Models'}</button>
                         <button type="button" class="secondary" onclick="renegotiateProvider('${id}')" ${isBusy(negotiateKey) ? 'disabled' : ''}>${isBusy(negotiateKey) ? 'Negotiating…' : 'Re-negotiate model'}</button>
@@ -1697,6 +1782,31 @@ function renderProviders() {
             `;
         })
         .join('');
+
+    // D3 provider overview charts
+    if (typeof LoomCharts !== 'undefined' && state.providers && state.providers.length) {
+        const ringEl = document.getElementById('d3-providers-health-ring');
+        if (ringEl) {
+            const counts = {};
+            state.providers.forEach(function (p) {
+                var s = (p.status === 'healthy' || p.status === 'active') ? 'healthy' : (p.status || 'unknown');
+                counts[s] = (counts[s] || 0) + 1;
+            });
+            LoomCharts.statusRing(ringEl, counts, { size: 150, centerLabel: 'providers' });
+        }
+        const latBar = document.getElementById('d3-providers-latency-bar');
+        if (latBar) {
+            const latData = {};
+            state.providers.forEach(function (p) {
+                if (p.last_heartbeat_latency_ms) {
+                    latData[p.name || p.id] = p.last_heartbeat_latency_ms;
+                }
+            });
+            if (Object.keys(latData).length) {
+                LoomCharts.barChart(latBar, latData, { prefix: '', barHeight: 28 });
+            }
+        }
+    }
 }
 
 function getFilteredBeads() {
@@ -1750,6 +1860,18 @@ function resolveAgentName(agentId) {
     if (!agentId) return '';
     const agent = (state.agents || []).find(a => a.id === agentId);
     return agent ? (agent.name || agent.role || agentId) : agentId;
+}
+
+function formatAgentDisplayName(name) {
+    if (!name) return 'Unknown';
+    // Convert persona paths like "default/web-designer" to "Web Designer (Default)"
+    if (name.includes('/')) {
+        const parts = name.split('/');
+        const role = parts[parts.length - 1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const ns = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+        return `${role} (${ns})`;
+    }
+    return name;
 }
 
 function resolveProjectName(projectId) {
@@ -1954,16 +2076,17 @@ function renderAgents() {
 
     const html = agents.map(agent => {
         const statusClass = agent.status;
+        const displayName = formatAgentDisplayName(agent.name || agent.persona_name || agent.id);
         return `
             <div class="agent-card ${statusClass}">
                 <div class="agent-header">
-                    <span class="agent-name">${escapeHtml(agent.name)}</span>
+                    <span class="agent-name">${escapeHtml(displayName)}</span>
                     <span class="agent-status ${statusClass}">${agent.status}</span>
                 </div>
                 <div>
                     <strong>Persona:</strong> ${escapeHtml(agent.persona_name)}<br>
-                    <strong>Project:</strong> ${agent.project_id.substring(0, 12)}...<br>
-                    ${agent.current_bead ? `<strong>Working on:</strong> ${agent.current_bead}` : ''}
+                    <strong>Project:</strong> ${escapeHtml(resolveProjectName(agent.project_id))}<br>
+                    ${agent.current_bead ? `<strong>Working on:</strong> ${escapeHtml(agent.current_bead)}` : ''}
                 </div>
                 <div style="margin-top: 1rem;">
                     ${agent.current_bead ? `<button class="secondary" onclick="viewAgentConversation('${escapeHtml(agent.current_bead)}')" title="View conversation log">Log</button>` : ''}
@@ -1982,6 +2105,25 @@ function renderAgents() {
                   'Spawn an agent to start working on beads.',
                   '<button type="button" class="secondary" onclick="showSpawnAgentModal()">Spawn your first agent</button>'
               );
+
+    // D3 agent overview charts
+    if (typeof LoomCharts !== 'undefined') {
+        const ringEl = document.getElementById('d3-agents-status-ring');
+        if (ringEl) {
+            const counts = {};
+            agents.forEach(function (a) { var s = a.status || 'unknown'; counts[s] = (counts[s] || 0) + 1; });
+            LoomCharts.statusRing(ringEl, counts, { size: 150, centerLabel: 'agents' });
+        }
+        const workEl = document.getElementById('d3-agents-workload-donut');
+        if (workEl) {
+            const workData = {};
+            agents.forEach(function (a) {
+                var name = formatAgentDisplayName(a.name || a.persona_name || a.id);
+                workData[name] = (workData[name] || 0) + 1;
+            });
+            LoomCharts.donut(workEl, workData, { centerLabel: 'agents', size: 180 });
+        }
+    }
 }
 
 function renderProjects() {
@@ -2007,13 +2149,11 @@ function renderProjects() {
 
 function viewProject(projectId) {
     uiState.project.selectedId = projectId;
-    if (location.hash === '#project-viewer') {
-        // Already on the project viewer tab — just re-render
-        render();
-    } else {
-        // Navigate to project viewer (hashchange will trigger tab switch + render)
-        location.hash = '#project-viewer';
+    if (typeof window.activateViewTab === 'function') {
+        window.activateViewTab('project-viewer');
     }
+    location.hash = '#project-viewer';
+    render();
 }
 
 function projectFormFields(project = {}) {
@@ -2518,7 +2658,7 @@ function renderPersonas() {
         <button type="button" class="persona-card" onclick="editPersona('${escapeHtml(persona.name)}')" aria-label="Edit persona: ${escapeHtml(persona.name)}">
             <h3>🎭 ${escapeHtml(persona.name)}</h3>
             <div>
-                <strong>Autonomy:</strong> ${escapeHtml(persona.autonomy_level || 'N/A')}<br>
+                <strong>Autonomy:</strong> ${escapeHtml(persona.autonomy_level || 'semi')}<br>
                 <strong>Character:</strong> ${escapeHtml((persona.character || '').substring(0, 100))}...
             </div>
         </button>
@@ -4208,26 +4348,71 @@ async function loadAnalytics() {
     }
 }
 
+function cleanAgentKeys(data) {
+    const out = {};
+    Object.keys(data).forEach(function (k) {
+        const clean = k.replace(/^agent:/, '');
+        out[clean] = data[k];
+    });
+    return out;
+}
+
 function renderAnalytics(stats) {
-    // Update summary cards
-    document.getElementById('analytics-total-requests').textContent = 
-        stats.total_requests.toLocaleString();
-    
-    document.getElementById('analytics-total-cost').textContent = 
-        '$' + stats.total_cost_usd.toFixed(2);
-    
-    document.getElementById('analytics-avg-latency').textContent = 
-        Math.round(stats.avg_latency_ms);
-    
-    document.getElementById('analytics-error-rate').textContent = 
-        (stats.error_rate * 100).toFixed(1);
-    
-    // Render charts
+    // Animated summary counters (D3)
+    const reqEl = document.getElementById('analytics-total-requests');
+    const tokEl = document.getElementById('analytics-total-tokens');
+    const costEl = document.getElementById('analytics-total-cost');
+    const latEl = document.getElementById('analytics-avg-latency');
+    if (typeof LoomCharts !== 'undefined') {
+        if (reqEl) LoomCharts.animateCounter(reqEl, stats.total_requests);
+        if (tokEl) LoomCharts.animateCounter(tokEl, stats.total_tokens);
+        if (costEl) LoomCharts.animateCounter(costEl, stats.total_cost_usd, { prefix: '$', decimals: 2 });
+        if (latEl) LoomCharts.animateCounter(latEl, Math.round(stats.avg_latency_ms / 1000), { suffix: 's' });
+
+        // Error rate gauge
+        const gaugeEl = document.getElementById('analytics-error-gauge');
+        if (gaugeEl) LoomCharts.gauge(gaugeEl, stats.error_rate || 0, { label: (stats.error_rate * 100).toFixed(1) + '%' });
+
+        // Provider donuts
+        const donutReq = document.getElementById('d3-donut-requests-provider');
+        if (donutReq) LoomCharts.donut(donutReq, stats.requests_by_provider || {}, { centerLabel: 'requests' });
+
+        const donutTok = document.getElementById('d3-donut-tokens-provider');
+        if (donutTok) LoomCharts.donut(donutTok, stats.tokens_by_provider || stats.requests_by_provider || {}, { centerLabel: 'tokens' });
+
+        // Latency bar
+        const latBar = document.getElementById('d3-bar-latency-provider');
+        if (latBar) {
+            const latData = stats.latency_by_provider || {};
+            const latDisplay = {};
+            Object.keys(latData).forEach(function (k) { latDisplay[k] = Math.round(latData[k] / 1000); });
+            LoomCharts.barChart(latBar, latDisplay, { prefix: '', barHeight: 32 });
+        }
+
+        // Agent workload bars
+        const agentReqBar = document.getElementById('d3-bar-requests-agent');
+        if (agentReqBar) {
+            const cleanAgentReqs = cleanAgentKeys(stats.requests_by_user || {});
+            LoomCharts.barChart(agentReqBar, cleanAgentReqs, { labelWidth: 150 });
+        }
+
+        const agentTokBar = document.getElementById('d3-bar-tokens-agent');
+        if (agentTokBar) {
+            const cleanAgentToks = cleanAgentKeys(stats.tokens_by_user || stats.requests_by_user || {});
+            LoomCharts.barChart(agentTokBar, cleanAgentToks, { labelWidth: 150 });
+        }
+    } else {
+        // Fallback: plain text
+        if (reqEl) reqEl.textContent = stats.total_requests.toLocaleString();
+        if (tokEl) tokEl.textContent = LoomCharts ? LoomCharts.shortNum(stats.total_tokens) : stats.total_tokens.toLocaleString();
+        if (costEl) costEl.textContent = '$' + stats.total_cost_usd.toFixed(2);
+        if (latEl) latEl.textContent = Math.round(stats.avg_latency_ms);
+    }
+
+    // Cost charts (legacy bar chart as fallback until costs are configured)
     renderBarChart('chart-cost-by-provider', stats.cost_by_provider || {}, '$');
     renderBarChart('chart-cost-by-user', stats.cost_by_user || {}, '$');
-    renderBarChart('chart-requests-by-provider', stats.requests_by_provider || {}, '');
-    renderBarChart('chart-requests-by-user', stats.requests_by_user || {}, '');
-    
+
     // Render detailed table
     renderAnalyticsTable(stats);
 }

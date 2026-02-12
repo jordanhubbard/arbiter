@@ -2030,3 +2030,21 @@ button.small {
 .bead-modal-meta > div {
     margin-bottom: 0.25rem;
 }
+
+/* D3 chart integration */
+.chart svg text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.analytics-card svg {
+    display: block;
+}
+
+#d3-home-bead-treemap svg {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.chart-container svg {
+    overflow: visible;
+}

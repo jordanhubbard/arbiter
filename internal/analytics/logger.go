@@ -90,7 +90,10 @@ type LogStats struct {
 	RequestsByUser     map[string]int64   `json:"requests_by_user"`
 	RequestsByProvider map[string]int64   `json:"requests_by_provider"`
 	CostByProvider     map[string]float64 `json:"cost_by_provider"`
-	CostByUser         map[string]float64 `json:"cost_by_user"` // Cost tracking per user
+	CostByUser         map[string]float64 `json:"cost_by_user"`
+	TokensByProvider   map[string]int64   `json:"tokens_by_provider"`
+	TokensByUser       map[string]int64   `json:"tokens_by_user"`
+	LatencyByProvider  map[string]float64 `json:"latency_by_provider"`
 }
 
 // NewLogger creates a new request logger

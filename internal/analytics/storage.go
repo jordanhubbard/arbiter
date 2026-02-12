@@ -225,6 +225,9 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 		RequestsByProvider: make(map[string]int64),
 		CostByProvider:     make(map[string]float64),
 		CostByUser:         make(map[string]float64),
+		TokensByProvider:   make(map[string]int64),
+		TokensByUser:       make(map[string]int64),
+		LatencyByProvider:  make(map[string]float64),
 	}
 
 	var errorCount int64
@@ -244,9 +247,10 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 		stats.ErrorRate = float64(errorCount) / float64(stats.TotalRequests)
 	}
 
-	// Get per-user stats (requests and costs)
+	// Get per-user stats (requests, costs, tokens)
 	userQuery := fmt.Sprintf(`
-		SELECT user_id, COUNT(*) as count, COALESCE(SUM(cost_usd), 0) as cost
+		SELECT user_id, COUNT(*) as count, COALESCE(SUM(cost_usd), 0) as cost,
+		       COALESCE(SUM(total_tokens), 0) as tokens
 		FROM request_logs
 		WHERE 1=1 %s AND user_id IS NOT NULL AND user_id != ''
 		GROUP BY user_id
@@ -259,16 +263,19 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 			var userID string
 			var count int64
 			var cost float64
-			if err := rows.Scan(&userID, &count, &cost); err == nil {
+			var tokens int64
+			if err := rows.Scan(&userID, &count, &cost, &tokens); err == nil {
 				stats.RequestsByUser[userID] = count
 				stats.CostByUser[userID] = cost
+				stats.TokensByUser[userID] = tokens
 			}
 		}
 	}
 
-	// Get per-provider stats
+	// Get per-provider stats (requests, costs, tokens, latency)
 	providerQuery := fmt.Sprintf(`
-		SELECT provider_id, COUNT(*) as count, COALESCE(SUM(cost_usd), 0) as cost
+		SELECT provider_id, COUNT(*) as count, COALESCE(SUM(cost_usd), 0) as cost,
+		       COALESCE(SUM(total_tokens), 0) as tokens, COALESCE(AVG(latency_ms), 0) as avg_latency
 		FROM request_logs
 		WHERE 1=1 %s AND provider_id IS NOT NULL AND provider_id != ''
 		GROUP BY provider_id
@@ -281,9 +288,13 @@ func (s *DatabaseStorage) GetLogStats(ctx context.Context, filter *LogFilter) (*
 			var providerID string
 			var count int64
 			var cost float64
-			if err := rows.Scan(&providerID, &count, &cost); err == nil {
+			var tokens int64
+			var avgLatency float64
+			if err := rows.Scan(&providerID, &count, &cost, &tokens, &avgLatency); err == nil {
 				stats.RequestsByProvider[providerID] = count
 				stats.CostByProvider[providerID] = cost
+				stats.TokensByProvider[providerID] = tokens
+				stats.LatencyByProvider[providerID] = avgLatency
 			}
 		}
 	}

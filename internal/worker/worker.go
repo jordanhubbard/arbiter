@@ -585,6 +585,34 @@ type ActionLogEntry struct {
 	Timestamp time.Time        `json:"timestamp"`
 }
 
+// isConversationalResponse detects when the model slips into chat mode
+// instead of returning a JSON action.
+func isConversationalResponse(response string) bool {
+	lower := strings.ToLower(response)
+	patterns := []string{
+		"what would you like",
+		"what do you want me to",
+		"how would you like me to",
+		"shall i",
+		"would you like me to",
+		"let me know if",
+		"please let me know",
+		"do you want me to",
+		"what should i do next",
+		"how should i proceed",
+		"awaiting your instructions",
+		"waiting for your input",
+		"please provide",
+		"could you clarify",
+	}
+	for _, p := range patterns {
+		if strings.Contains(lower, p) {
+			return true
+		}
+	}
+	return false
+}
+
 // ExecuteTaskWithLoop runs the task in a multi-turn action loop:
 // call LLM → parse actions → execute → format results → feed back → repeat.
 func (w *Worker) ExecuteTaskWithLoop(ctx context.Context, task *Task, config *LoopConfig) (*LoopResult, error) {
@@ -779,7 +807,26 @@ func (w *Worker) ExecuteTaskWithLoop(ctx context.Context, task *Task, config *Lo
 				continue
 			}
 
-			// Actual JSON parse failure
+			// Actual JSON parse failure — check if the model slipped into conversational mode
+			isConversational := isConversationalResponse(llmResponse)
+			if isConversational {
+				// Don't count conversational slip-ups the same as JSON typos —
+				// nudge the agent back into autonomous mode
+				feedback := "## AUTONOMOUS MODE REMINDER\n\n" +
+					"You are an AUTONOMOUS agent, not a chatbot. Do NOT ask questions or wait for instructions. " +
+					"You must decide what to do next on your own and respond with a JSON action.\n\n" +
+					"Analyze the task and previous results, then take the next logical action. " +
+					"If you've completed the work, use {\"action\": \"done\", \"reason\": \"summary\"}. " +
+					"If you need more information, use search or read actions. " +
+					"RESPOND WITH JSON ONLY."
+				messages = append(messages, provider.ChatMessage{Role: "user", Content: feedback})
+				if conversationCtx != nil {
+					conversationCtx.AddMessage("user", feedback, len(feedback)/4)
+				}
+				log.Printf("[ActionLoop] Conversational slip on iteration %d, nudging back to autonomous mode", iteration+1)
+				continue
+			}
+
 			consecutiveParseFailures++
 			if consecutiveParseFailures >= 2 {
 				loopResult.TerminalReason = "parse_failures"

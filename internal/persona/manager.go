@@ -66,6 +66,11 @@ func (m *Manager) LoadPersona(name string) (*models.Persona, error) {
 	// Parse AI_START_HERE.md sections
 	m.parseInstructionsFile(persona, string(instructionsContent))
 
+	// Default autonomy to "semi" if not defined in persona file
+	if persona.AutonomyLevel == "" {
+		persona.AutonomyLevel = string(models.AutonomySemi)
+	}
+
 	// Cache it
 	m.personas[name] = persona
 
