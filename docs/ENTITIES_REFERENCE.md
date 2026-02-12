@@ -55,6 +55,15 @@ An autonomous AI entity with a specific role and behavioral instructions.
 └─────────┘                    └─────┘
 ```
 
+### Naming
+
+When spawning an agent without a custom name, the display name is auto-derived from the persona path:
+- `default/web-designer` -> `Web Designer (Default)`
+- `default/engineering-manager` -> `Engineering Manager (Default)`
+- `projects/myapp/specialist` -> `Specialist (myapp)`
+
+The agent ID is generated as `agent-{unix_timestamp}-{display_name}`.
+
 ### Lifecycle
 
 1. **Creation**: Agent created when assigned to a project

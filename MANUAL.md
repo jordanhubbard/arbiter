@@ -25,6 +25,7 @@ Loom is an **agent orchestration system** that:
 ### Agents
 - Autonomous AI entities with specific roles (CEO, Engineering Manager, Code Reviewer, etc.)
 - Created from **personas** (behavior definitions in `personas/default/`)
+- When spawned without a custom name, a display name is auto-derived from the persona path (e.g., `default/web-designer` becomes `Web Designer (Default)`)
 - Auto-assigned to healthy providers from the shared pool
 - Execute work through a **multi-turn action loop**: LLM call -> parse actions -> execute -> feedback -> repeat
 
@@ -150,9 +151,17 @@ DELETE /api/v1/providers/:id
 
 # Agents
 GET    /api/v1/agents
+POST   /api/v1/agents                    # Spawn new agent (persona_name, project_id required)
+DELETE /api/v1/agents/:id
 
 # Beads
 GET    /api/v1/beads
+POST   /api/v1/beads
+PATCH  /api/v1/beads/:id
+
+# Conversations
+GET    /api/v1/conversations             # List conversation sessions
+GET    /api/v1/conversations/:session_id # Get conversation with messages
 
 # Events
 GET    /api/v1/events/stream             # SSE real-time events

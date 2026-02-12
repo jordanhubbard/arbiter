@@ -22,6 +22,8 @@
     
     // Auto-file error to backend
     async function autoFileError(errorInfo) {
+        // Don't flood auto-file attempts when backend is down
+        if (typeof backendDown !== 'undefined' && backendDown) return;
         const errorType = errorInfo.errorType || 'js_error';
         const severity = errorInfo.severity || (errorType === 'api_error' ? 'critical' : 'high');
         const source = errorInfo.source || 'frontend';

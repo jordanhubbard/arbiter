@@ -11,6 +11,39 @@ let loginInFlight = null;
 // Should match server-side config.yaml security.enable_auth setting
 const AUTH_ENABLED = false;
 
+// Backend connectivity tracking — suppress toast floods when backend is down
+let backendDown = false;
+let backendDownSince = null;
+let backendBannerEl = null;
+
+function setBackendDown(isDown) {
+    if (isDown && !backendDown) {
+        backendDown = true;
+        backendDownSince = Date.now();
+        showBackendBanner(true);
+    } else if (!isDown && backendDown) {
+        backendDown = false;
+        backendDownSince = null;
+        showBackendBanner(false);
+        loadAll();
+    }
+}
+
+function showBackendBanner(show) {
+    if (!backendBannerEl) {
+        backendBannerEl = document.createElement('div');
+        backendBannerEl.id = 'backend-down-banner';
+        backendBannerEl.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:10000;background:#d32f2f;color:#fff;text-align:center;padding:0.75rem;font-weight:600;font-size:0.95rem;display:none;';
+        document.body.prepend(backendBannerEl);
+    }
+    if (show) {
+        backendBannerEl.textContent = 'Backend unavailable — reconnecting...';
+        backendBannerEl.style.display = 'block';
+    } else {
+        backendBannerEl.style.display = 'none';
+    }
+}
+
 // State
 let state = {
     beads: [],
@@ -410,7 +443,10 @@ async function apiCall(endpoint, options = {}) {
             ...options,
             headers
         });
-        
+
+        // Backend is reachable — clear any connectivity banner
+        if (backendDown) setBackendDown(false);
+
         if (!response.ok) {
             let message = 'API request failed';
             try {
@@ -450,6 +486,21 @@ async function apiCall(endpoint, options = {}) {
         
         return await response.json();
     } catch (error) {
+        const isNetworkError = !error.status && (
+            (error.message || '').includes('Failed to fetch') ||
+            (error.message || '').includes('NetworkError') ||
+            (error.message || '').includes('Load failed') ||
+            (error.message || '').includes('net::ERR_')
+        );
+
+        if (isNetworkError) {
+            setBackendDown(true);
+            throw error;
+        }
+
+        // Backend is reachable (got a real error response)
+        if (backendDown) setBackendDown(false);
+
         if (!autoFiledApiFailure
             && !options.skipAutoFile
             && typeof window !== 'undefined'
@@ -463,7 +514,7 @@ async function apiCall(endpoint, options = {}) {
             });
         }
         console.error('[Loom] API Error:', error);
-        if (!options.suppressToast) {
+        if (!options.suppressToast && !backendDown) {
             showToast(error.message || 'Request failed', 'error');
         }
         throw error;
@@ -2986,8 +3037,8 @@ function viewBead(beadId) {
     const availableAgents = (state.agents || []).filter(a => a.status !== 'terminated');
     const agentOptions = '<option value="">-- select agent --</option>' +
         availableAgents.map(a => {
-            const display = a.name || a.role || a.id;
-            return `<option value="${escapeHtml(a.id)}"${bead.assigned_to === a.id ? ' selected' : ''}>${escapeHtml(a.id)}-${escapeHtml(display)}</option>`;
+            const display = a.name || a.role || a.persona_name || a.id;
+            return `<option value="${escapeHtml(a.id)}"${bead.assigned_to === a.id ? ' selected' : ''}>${escapeHtml(display)} (${escapeHtml(a.status)})</option>`;
         }).join('');
 
     const body = `
@@ -3001,10 +3052,8 @@ function viewBead(beadId) {
 
             <div class="bead-modal-assign">
                 <strong>Agent Assignment</strong>
-                <div class="bead-modal-assign-row">
-                    <select id="bead-modal-agent">${agentOptions}</select>
-                    <button type="button" id="bead-modal-dispatch-btn" class="secondary">Assign &amp; Dispatch</button>
-                </div>
+                <select id="bead-modal-agent" style="width:100%;margin:0.5rem 0;">${agentOptions}</select>
+                <button type="button" id="bead-modal-dispatch-btn" class="secondary" style="width:100%;">Assign &amp; Dispatch</button>
             </div>
 
             <div class="bead-modal-fields">

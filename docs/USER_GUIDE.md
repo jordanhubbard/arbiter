@@ -23,15 +23,17 @@ The Loom dashboard has several tabs:
 
 | Tab | What It Shows |
 |---|---|
-| **Projects** | All registered projects with status, agents, and open work counts |
-| **Agents** | Active AI agents, their personas, assigned projects, and current status |
-| **Providers** | AI provider backends with health status and routing metrics |
-| **Personas** | Available agent personas (roles like PM, Engineer, QA) |
-| **Beads** | Work items across all projects with status and assignment |
+| **Home (Project Viewer)** | Selected project details, assigned agents, and beads in kanban columns |
+| **Kanban** | All beads across projects with filtering by project, priority, type, assignee, and tags |
 | **Decisions** | Pending decisions that need human approval |
-| **Activity** | Real-time feed of system events |
+| **Agents** | Active AI agents, their personas, assigned projects, and current status |
+| **Personas** | Available agent personas (roles like PM, Engineer, QA) |
+| **Users** | User accounts and API key management |
+| **Projects** | All registered projects with status, git operations, and management actions |
+| **Providers** | AI provider backends with health status and routing metrics |
+| **Conversations** | Agent conversation sessions with message history |
+| **CEO** | CEO command center with dashboard summary, CEO REPL, and assigned beads |
 | **Analytics** | Usage statistics, cost tracking, and performance metrics |
-| **CEO REPL** | Direct query interface for high-priority questions |
 
 ---
 
@@ -80,6 +82,17 @@ curl -X POST http://localhost:8080/api/v1/projects/bootstrap \
 
 The response includes a public SSH key. Hand this to your administrator to register as a deploy key on the repository.
 
+### Managing Projects
+
+The **Projects** tab shows all registered projects in a table with:
+- Git repository URL and branch
+- Status (open/closed) and type (perpetual/sticky/regular)
+- Action buttons:
+  - **View** (👁️) — Switch to the Project Viewer with this project selected
+  - **Edit** (✏️) — Modify project settings (name, branch, git strategy, etc.)
+  - **Git Operations** (🔄) — Pull, commit, push, and check git status
+  - **Delete** (🗑️) — Remove the project from Loom (non-perpetual projects only)
+
 ---
 
 ## The Project Lifecycle
@@ -117,12 +130,24 @@ sequenceDiagram
 
 ### Monitoring Progress
 
-The **Project Viewer** shows:
-- Project status and readiness
+The **Project Viewer** (Home tab) shows:
+- Project status and git readiness
 - Assigned agents and their current state
-- A Kanban-style view of beads (open, in-progress, blocked, closed)
-- The activity feed for this project
-- Comments and decisions
+- A Kanban-style view of beads (open, in-progress, closed) for the selected project
+- Agent assignments
+
+The **Kanban Board** tab shows beads across all projects with powerful filtering:
+- **Project filter** — Select a specific project or view all projects at once
+- **Priority / Type / Tag filters** — Narrow down to specific work
+- **Assigned to filter** — Find beads assigned to a specific agent
+- **Search** — Full-text search across bead title, description, and ID
+
+When viewing all projects, each bead card shows the project name for context. Bead cards display the assigned agent's display name (not the raw agent ID).
+
+Click a bead to open the **Bead Details** modal, which shows:
+- Agent Assignment dropdown (at the top) with Assign & Dispatch button
+- All editable bead fields (title, type, status, priority, etc.)
+- Action buttons: Save Changes, Pair, Redispatch, Close Bead
 
 ---
 
@@ -202,15 +227,25 @@ Decisions have a 48-hour default timeout. Unresolved decisions block dependent w
 
 ---
 
-## CEO REPL
+## CEO Command Center
 
-The CEO REPL is a direct query interface for high-priority questions. It routes your question through the best available provider using the Loom system persona.
+The CEO tab combines the dashboard summary, CEO REPL, and assigned CEO beads in one place.
 
-1. Navigate to the **CEO REPL** tab
-2. Type your question and click **Send**
-3. Review the response, which includes the provider and model used
+### CEO REPL
 
-Use this for quick system-level queries, architecture questions, or priority decisions.
+The CEO REPL supports two modes:
+
+**General queries** -- Type a question and click **Send**. Loom routes your question through the best available provider using the system persona. Use this for system-level queries, architecture questions, or priority decisions.
+
+**Agent dispatch** -- Type `Agent Name: task description` to dispatch work directly to a named agent. For example:
+
+```
+Web Designer: Review the user interface for accessibility issues
+```
+
+The REPL matches agents assigned to the currently selected project by name, role, or persona. If a match is found, it creates a bead and assigns it to that agent. Available agents and their status are shown if no match is found.
+
+Streaming responses can be toggled on/off with the **Enable streaming** checkbox.
 
 ---
 
@@ -344,7 +379,7 @@ Check the Project Viewer to see overall completion. When all beads are closed, t
 A: Check that agents are assigned to the project, the project's git access is working (`readiness_ok: true`), and beads aren't blocked by unresolved dependencies.
 
 **Q: How do I add more agents to a project?**
-A: Use the API: `POST /api/v1/projects/{id}/agents` with `{"agent_id": "...", "action": "assign"}`. Or ask your administrator.
+A: Click **Spawn New Agent** in the Agents tab, select a persona, project, and provider. The agent name is optional -- if left blank, a friendly display name is derived from the persona (e.g., `default/web-designer` becomes `Web Designer (Default)`). You can also use the API: `POST /api/v1/agents` with `{"persona_name": "web-designer", "project_id": "my-project"}`.
 
 **Q: A decision has been waiting for days. What happens?**
 A: Decisions timeout after 48 hours by default. The system may escalate or auto-resolve depending on the decision type.

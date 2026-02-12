@@ -496,14 +496,23 @@ func (d *Dispatcher) DispatchOnce(ctx context.Context, projectID string) (*Dispa
 			log.Printf("[Dispatcher] Bead %s has persona hint '%s' but no exact match - will assign to any idle agent", b.ID, personaHint)
 		}
 
-		// Pick any idle agent for this bead's project
+		// Pick an idle agent for this bead's project.
+		// Prefer Engineering Manager as default assignee for unassigned beads.
 		var matchedAgent *models.Agent
+		var fallbackAgent *models.Agent
 		for _, a := range idleAgents {
-			// Prefer agents assigned to the same project as the bead
 			if a.ProjectID == b.ProjectID || a.ProjectID == "" || b.ProjectID == "" {
-				matchedAgent = a
-				break
+				if fallbackAgent == nil {
+					fallbackAgent = a
+				}
+				if normalizeRoleName(a.Role) == "engineering-manager" {
+					matchedAgent = a
+					break
+				}
 			}
+		}
+		if matchedAgent == nil {
+			matchedAgent = fallbackAgent
 		}
 		if matchedAgent == nil {
 			skippedReasons["no_idle_agents_for_project"]++
