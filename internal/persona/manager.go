@@ -62,7 +62,7 @@ func (m *Manager) LoadPersona(name string) (*models.Persona, error) {
 
 	// Create persona from frontmatter (Agent Skills format)
 	persona := &models.Persona{
-		Name:          frontmatter.Name,
+		Name:          name, // Use directory path as unique identifier
 		Description:   frontmatter.Description,
 		Instructions:  body,
 		License:       frontmatter.License,
