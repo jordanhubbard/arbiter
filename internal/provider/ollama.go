@@ -22,7 +22,7 @@ func NewOllamaProvider(endpoint string) *OllamaProvider {
 	return &OllamaProvider{
 		endpoint: strings.TrimSuffix(endpoint, "/"),
 		client: &http.Client{
-			Timeout: 5 * time.Minute, // Local models can be slow for long text generation
+			Timeout: 15 * time.Minute, // Increased for action loops with 25 iterations
 		},
 	}
 }
