@@ -4,6 +4,8 @@
 BINARY_NAME=loom
 VERSION?=dev
 LDFLAGS=-ldflags "-X main.version=$(VERSION)"
+GO_REQUIRED := $(shell awk '/^go /{print $$2}' go.mod)
+GO_TOOLCHAIN_VERSION ?= $(GO_REQUIRED).0
 
 all: build
 
@@ -114,7 +116,35 @@ deps:
 	$(MAKE) deps-go
 
 deps-go:
-	go mod download
+	@set -e; \
+	required="$(GO_REQUIRED)"; \
+	toolchain="$(GO_TOOLCHAIN_VERSION)"; \
+	os=$$(uname -s); \
+	arch=$$(uname -m); \
+	case "$$arch" in \
+		x86_64) arch=amd64 ;; \
+		aarch64|arm64) arch=arm64 ;; \
+		*) echo "Unsupported architecture: $$arch"; exit 1 ;; \
+	esac; \
+	current=""; \
+	if command -v go >/dev/null 2>&1; then \
+		current=$$(go env GOVERSION | sed 's/^go//' | awk -F. '{print $$1"."$$2}'); \
+	fi; \
+	if [ "$$current" != "$$required" ]; then \
+		if [ "$$os" = "Linux" ]; then \
+			url="https://go.dev/dl/go$${toolchain}.linux-$${arch}.tar.gz"; \
+			echo "Installing Go $$toolchain from $$url"; \
+			sudo rm -rf /usr/local/go; \
+			curl -fsSL "$$url" | sudo tar -C /usr/local -xz; \
+			sudo ln -sf /usr/local/go/bin/go /usr/local/bin/go; \
+			sudo ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt; \
+			export PATH=/usr/local/go/bin:$$PATH; \
+		elif [ "$$os" = "Darwin" ]; then \
+			echo "Ensuring Go $$required is installed via Homebrew"; \
+			brew install go || brew upgrade go; \
+		fi; \
+	fi; \
+	go mod download; \
 	go mod tidy
 
 deps-macos:
