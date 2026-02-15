@@ -1,0 +1,26 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: bd-001
+type: task
+title: Test Bead
+description: Test description
+status: open
+priority: 2
+projectid: proj-8
+assignedto: agent-1771115228-Engineering Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context: {}
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-14T16:27:08.662459-08:00
+updatedat: 2026-02-14T16:27:08.664886-08:00
+closedat: null

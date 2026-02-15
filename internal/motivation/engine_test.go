@@ -425,3 +425,106 @@ func TestEngineManualTrigger(t *testing.T) {
 		t.Error("expected manual flag in trigger data")
 	}
 }
+
+func TestEngineRegisterEvaluator(t *testing.T) {
+	registry := NewRegistry(nil)
+	stateProvider := NewMockStateProvider()
+	actionHandler := NewMockActionHandler()
+
+	engine := NewEngine(registry, stateProvider, actionHandler)
+
+	// Register a custom evaluator
+	customEval := &CalendarEvaluator{}
+	engine.RegisterEvaluator(MotivationTypeCalendar, customEval)
+	// Should not panic, just verifies the method works
+}
+
+func TestEngineStartStop(t *testing.T) {
+	registry := NewRegistry(nil)
+	stateProvider := NewMockStateProvider()
+	actionHandler := NewMockActionHandler()
+
+	engine := NewEngine(registry, stateProvider, actionHandler)
+
+	// Initially not running
+	if engine.IsRunning() {
+		t.Error("engine should not be running initially")
+	}
+
+	// Start with cancelled context to make it stop quickly
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan error, 1)
+	go func() {
+		done <- engine.Start(ctx)
+	}()
+
+	// Give it a moment to start
+	time.Sleep(50 * time.Millisecond)
+	if !engine.IsRunning() {
+		t.Error("engine should be running after Start")
+	}
+
+	// Stop it via context cancellation
+	cancel()
+	err := <-done
+	if err != context.Canceled {
+		t.Errorf("Start() returned %v, want context.Canceled", err)
+	}
+
+	// Should no longer be running
+	time.Sleep(50 * time.Millisecond)
+	if engine.IsRunning() {
+		t.Error("engine should not be running after context cancel")
+	}
+}
+
+func TestEngineStartStopViaStop(t *testing.T) {
+	registry := NewRegistry(nil)
+	stateProvider := NewMockStateProvider()
+	actionHandler := NewMockActionHandler()
+
+	engine := NewEngine(registry, stateProvider, actionHandler)
+
+	ctx := context.Background()
+	done := make(chan error, 1)
+	go func() {
+		done <- engine.Start(ctx)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Stop via Stop() method
+	engine.Stop()
+	err := <-done
+	if err != nil {
+		t.Errorf("Start() returned %v, want nil", err)
+	}
+
+	if engine.IsRunning() {
+		t.Error("engine should not be running after Stop")
+	}
+}
+
+func TestEngineDoubleStart(t *testing.T) {
+	registry := NewRegistry(nil)
+	stateProvider := NewMockStateProvider()
+	actionHandler := NewMockActionHandler()
+
+	engine := NewEngine(registry, stateProvider, actionHandler)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go engine.Start(ctx)
+	time.Sleep(50 * time.Millisecond)
+
+	// Double start should return error
+	err := engine.Start(ctx)
+	if err == nil {
+		t.Error("double Start should return error")
+	}
+
+	cancel()
+	time.Sleep(50 * time.Millisecond)
+}

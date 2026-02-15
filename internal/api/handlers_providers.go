@@ -24,6 +24,10 @@ type ProviderRequest struct {
 func (s *Server) handleProviders(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		providers, err := s.app.ListProviders()
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
@@ -61,6 +65,10 @@ func (s *Server) handleProviders(w http.ResponseWriter, r *http.Request) {
 			provider.RequiresKey = true
 		}
 
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		created, err := s.app.RegisterProvider(context.Background(), provider, apiKey)
 		if err != nil {
 			s.respondError(w, http.StatusBadRequest, err.Error())
@@ -89,6 +97,10 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 			s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			return
 		}
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		models, err := s.app.GetProviderModels(context.Background(), providerID)
 		if err != nil {
 			s.respondError(w, http.StatusBadGateway, err.Error())
@@ -102,6 +114,10 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 			s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			return
 		}
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		updated, err := s.app.NegotiateProviderModel(context.Background(), providerID)
 		if err != nil {
 			s.respondError(w, http.StatusBadGateway, err.Error())
@@ -113,6 +129,10 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		providers, err := s.app.ListProviders()
 		if err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
@@ -127,6 +147,10 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 		s.respondError(w, http.StatusNotFound, "Provider not found")
 
 	case http.MethodDelete:
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+			return
+		}
 		if err := s.app.DeleteProvider(context.Background(), providerID); err != nil {
 			s.respondError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -137,6 +161,10 @@ func (s *Server) handleProvider(w http.ResponseWriter, r *http.Request) {
 		var req internalmodels.Provider
 		if err := s.parseJSON(r, &req); err != nil {
 			s.respondError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+		if s.app == nil {
+			s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
 			return
 		}
 		req.ID = providerID

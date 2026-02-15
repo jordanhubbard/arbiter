@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	internalmodels "github.com/jordanhubbard/loom/internal/models"
@@ -23,6 +24,12 @@ func New(dbPath string) (*Database, error) {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	// SQLite in-memory databases are per-connection. Without limiting the pool
+	// to a single connection, new connections get a separate empty database.
+	if strings.Contains(dbPath, ":memory:") {
+		db.SetMaxOpenConns(1)
 	}
 
 	// Enable foreign keys

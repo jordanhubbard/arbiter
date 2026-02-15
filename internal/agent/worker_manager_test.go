@@ -699,4 +699,98 @@ func TestWorkerManager_SettersAndGetters(t *testing.T) {
 	if pool == nil {
 		t.Error("GetWorkerPool() returned nil")
 	}
+
+	// Test SetAgentPersister
+	m.SetAgentPersister(nil)
+	if m.agentPersister != nil {
+		t.Error("SetAgentPersister(nil) should set nil")
+	}
+
+	// Test SetActionRouter
+	m.SetActionRouter(nil)
+	if m.actionRouter != nil {
+		t.Error("SetActionRouter(nil) should set nil")
+	}
+
+	// Test SetAnalyticsLogger
+	m.SetAnalyticsLogger(nil)
+	if m.analyticsLogger != nil {
+		t.Error("SetAnalyticsLogger(nil) should set nil")
+	}
+
+	// Test SetLessonsProvider
+	m.SetLessonsProvider(nil)
+	if m.lessonsProvider != nil {
+		t.Error("SetLessonsProvider(nil) should set nil")
+	}
+
+	// Test SetDatabase
+	m.SetDatabase(nil)
+	if m.db != nil {
+		t.Error("SetDatabase(nil) should set nil")
+	}
+}
+
+func TestWorkerManager_GetIdleAgents(t *testing.T) {
+	m := setupWorkerManager(t)
+	ctx := context.Background()
+	persona := &models.Persona{Name: "test-persona"}
+
+	// No agents - should return empty
+	idle := m.GetIdleAgents()
+	if len(idle) != 0 {
+		t.Errorf("GetIdleAgents() = %d, want 0", len(idle))
+	}
+
+	// Create an agent and set it to idle
+	agent, err := m.CreateAgent(ctx, "idle-agent", "coder", "proj1", "coder", persona)
+	if err != nil {
+		t.Fatalf("CreateAgent() error = %v", err)
+	}
+	agent.Status = "idle"
+
+	idle = m.GetIdleAgents()
+	if len(idle) != 1 {
+		t.Errorf("GetIdleAgents() = %d, want 1", len(idle))
+	}
+
+	// Create a working agent - should not appear in idle
+	agent2, err := m.CreateAgent(ctx, "working-agent", "reviewer", "proj1", "reviewer", persona)
+	if err != nil {
+		t.Fatalf("CreateAgent() error = %v", err)
+	}
+	agent2.Status = "working"
+
+	idle = m.GetIdleAgents()
+	if len(idle) != 1 {
+		t.Errorf("GetIdleAgents() after working agent = %d, want 1", len(idle))
+	}
+}
+
+func TestWorkerManager_PersistAgent(t *testing.T) {
+	m := setupWorkerManager(t)
+	ctx := context.Background()
+	persona := &models.Persona{Name: "test-persona"}
+
+	// persistAgent with nil agent should not panic
+	m.persistAgent(nil)
+
+	// persistAgent without persister should not panic
+	agent, _ := m.CreateAgent(ctx, "test-agent", "coder", "proj1", "coder", persona)
+	m.persistAgent(agent)
+}
+
+func TestWorkerManager_ExecuteTask_ErrorCases(t *testing.T) {
+	m := setupWorkerManager(t)
+	ctx := context.Background()
+
+	// Non-existent agent
+	task := &worker.Task{
+		ID:          "task-1",
+		Description: "do something",
+	}
+	_, err := m.ExecuteTask(ctx, "nonexistent", task)
+	if err == nil {
+		t.Error("ExecuteTask with nonexistent agent should fail")
+	}
 }

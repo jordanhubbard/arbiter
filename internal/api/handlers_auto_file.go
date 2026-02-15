@@ -91,13 +91,22 @@ func (s *Server) HandleAutoFileBug(w http.ResponseWriter, r *http.Request) {
 		priority = models.BeadPriority(3) // P3 (Low)
 	}
 
+	// Check circuit breaker before filing
+	if s.isAutoFileCircuitOpen() {
+		s.respondError(w, http.StatusServiceUnavailable, "Auto-file circuit breaker is open")
+		return
+	}
+
+	if s.app == nil {
+		s.respondError(w, http.StatusServiceUnavailable, "Application not initialized")
+		return
+	}
+
 	// Get project ID (use loom-self for now)
 	projectID := "loom-self"
-	if s.app != nil {
-		if pm := s.app.GetProjectManager(); pm != nil {
-			if project, err := pm.GetProject("loom-self"); err == nil && project != nil {
-				projectID = project.ID
-			}
+	if pm := s.app.GetProjectManager(); pm != nil {
+		if project, err := pm.GetProject("loom-self"); err == nil && project != nil {
+			projectID = project.ID
 		}
 	}
 

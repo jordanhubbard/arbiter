@@ -147,3 +147,118 @@ func TestKeyManagerWrongPassword(t *testing.T) {
 		t.Error("Key manager should not be unlocked with wrong password")
 	}
 }
+
+func TestKeyManager_ChangePassword(t *testing.T) {
+	tmpDir := t.TempDir()
+	storePath := filepath.Join(tmpDir, "test_keystore.json")
+
+	oldPassword := "old-password-123"
+	newPassword := "new-password-456"
+
+	km := NewKeyManager(storePath)
+
+	// ChangePassword on locked store should fail
+	if err := km.ChangePassword(oldPassword, newPassword); err == nil {
+		t.Error("ChangePassword on locked store should fail")
+	}
+
+	// Unlock and store a key
+	if err := km.Unlock(oldPassword); err != nil {
+		t.Fatalf("Failed to unlock: %v", err)
+	}
+	if err := km.StoreKey("key1", "Key One", "desc", "secret-value-1"); err != nil {
+		t.Fatalf("Failed to store key: %v", err)
+	}
+	if err := km.StoreKey("key2", "Key Two", "desc", "secret-value-2"); err != nil {
+		t.Fatalf("Failed to store key: %v", err)
+	}
+
+	// Change password with wrong old password should fail
+	if err := km.ChangePassword("wrong-old", newPassword); err == nil {
+		t.Error("ChangePassword with wrong old password should fail")
+	}
+
+	// Change password with correct old password (no stored keys for simpler test)
+	km2 := NewKeyManager(filepath.Join(tmpDir, "test_keystore2.json"))
+	if err := km2.Unlock(oldPassword); err != nil {
+		t.Fatalf("Failed to unlock km2: %v", err)
+	}
+	if err := km2.ChangePassword(oldPassword, newPassword); err != nil {
+		t.Fatalf("ChangePassword() error = %v", err)
+	}
+
+	// Lock and re-unlock with new password
+	km2.Lock()
+	if err := km2.Unlock(newPassword); err != nil {
+		t.Fatalf("Failed to unlock with new password: %v", err)
+	}
+
+	// Old password should no longer work
+	km2.Lock()
+	if err := km2.Unlock(oldPassword); err == nil {
+		t.Error("Old password should not work after change")
+	}
+}
+
+func TestKeyManager_StoreAndDelete(t *testing.T) {
+	tmpDir := t.TempDir()
+	storePath := filepath.Join(tmpDir, "test_keystore.json")
+
+	km := NewKeyManager(storePath)
+	if err := km.Unlock("password"); err != nil {
+		t.Fatalf("Failed to unlock: %v", err)
+	}
+
+	// Store key
+	if err := km.StoreKey("to-delete", "Delete Me", "will be deleted", "value"); err != nil {
+		t.Fatalf("StoreKey() error = %v", err)
+	}
+
+	// Verify it exists
+	keys, err := km.ListKeys()
+	if err != nil {
+		t.Fatalf("ListKeys() error = %v", err)
+	}
+	found := false
+	for _, k := range keys {
+		if k.ID == "to-delete" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Key 'to-delete' not found in list")
+	}
+
+	// Delete it
+	if err := km.DeleteKey("to-delete"); err != nil {
+		t.Fatalf("DeleteKey() error = %v", err)
+	}
+
+	// Verify it's gone
+	_, err = km.GetKey("to-delete")
+	if err == nil {
+		t.Error("GetKey should fail after delete")
+	}
+}
+
+func TestKeyManager_LockedOperations(t *testing.T) {
+	tmpDir := t.TempDir()
+	storePath := filepath.Join(tmpDir, "test_keystore.json")
+
+	km := NewKeyManager(storePath)
+
+	// Operations on locked store should fail
+	if err := km.StoreKey("key1", "name", "desc", "val"); err == nil {
+		t.Error("StoreKey on locked store should fail")
+	}
+	if _, err := km.GetKey("key1"); err == nil {
+		t.Error("GetKey on locked store should fail")
+	}
+	if err := km.DeleteKey("key1"); err == nil {
+		t.Error("DeleteKey on locked store should fail")
+	}
+	if _, err := km.ListKeys(); err == nil {
+		t.Error("ListKeys on locked store should fail")
+	}
+}

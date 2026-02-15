@@ -3,10 +3,14 @@ package project
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jordanhubbard/loom/pkg/models"
 )
+
+// projectCounter provides unique IDs for projects created in the same second
+var projectCounter atomic.Int64
 
 // Manager manages projects
 type Manager struct {
@@ -34,7 +38,7 @@ func (m *Manager) CreateProject(name, gitRepo, branch, beadsPath string, context
 	defer m.mu.Unlock()
 
 	// Generate project ID
-	projectID := fmt.Sprintf("proj-%d", time.Now().Unix())
+	projectID := fmt.Sprintf("proj-%d", projectCounter.Add(1))
 
 	if beadsPath == "" {
 		beadsPath = ".beads"

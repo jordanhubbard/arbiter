@@ -1,0 +1,27 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: bd-001
+type: task
+title: To Close
+description: will be closed
+status: closed
+priority: 3
+projectid: proj-10
+assignedto: agent-1771115228-Engineering Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context:
+    close_reason: completed
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-14T16:27:09.070421-08:00
+updatedat: 2026-02-14T16:27:09.074458-08:00
+closedat: 2026-02-14T16:27:09.074458-08:00

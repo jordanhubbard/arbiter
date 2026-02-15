@@ -1,0 +1,26 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: bd-001
+type: task
+title: To Claim
+description: will be claimed
+status: open
+priority: 2
+projectid: proj-11
+assignedto: agent-1771115229-Engineering Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context: {}
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-14T16:27:09.205013-08:00
+updatedat: 2026-02-14T16:27:09.208249-08:00
+closedat: null

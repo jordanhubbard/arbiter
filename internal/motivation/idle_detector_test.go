@@ -281,3 +281,65 @@ func TestIdleStateBeadCounts(t *testing.T) {
 		t.Errorf("expected 3 in_progress beads, got %d", state.InProgressBeads)
 	}
 }
+
+// mockIdleListener implements IdleListener for testing
+type mockIdleListener struct {
+	systemIdleCalls  int
+	projectIdleCalls int
+}
+
+func (m *mockIdleListener) OnSystemIdle(duration time.Duration)                   { m.systemIdleCalls++ }
+func (m *mockIdleListener) OnProjectIdle(projectID string, duration time.Duration) { m.projectIdleCalls++ }
+func (m *mockIdleListener) OnAgentIdle(agentID string, duration time.Duration)     {}
+
+func TestIdleDetector_AddListenerAndNotify(t *testing.T) {
+	config := DefaultIdleConfig()
+	detector := NewIdleDetector(config)
+
+	listener := &mockIdleListener{}
+	detector.AddListener(listener)
+
+	// Notify with system idle state
+	state := &IdleState{
+		IsSystemIdle:    true,
+		SystemIdlePeriod: 5 * time.Minute,
+		IdleProjects: []ProjectIdleState{
+			{ProjectID: "proj1", IsIdle: true, IdlePeriod: 3 * time.Minute},
+			{ProjectID: "proj2", IsIdle: false},
+		},
+	}
+
+	detector.NotifyListeners(state)
+
+	if listener.systemIdleCalls != 1 {
+		t.Errorf("systemIdleCalls = %d, want 1", listener.systemIdleCalls)
+	}
+	if listener.projectIdleCalls != 1 {
+		t.Errorf("projectIdleCalls = %d, want 1 (only idle projects)", listener.projectIdleCalls)
+	}
+}
+
+func TestIdleDetector_NotifyNoListeners(t *testing.T) {
+	config := DefaultIdleConfig()
+	detector := NewIdleDetector(config)
+
+	// Notify with no listeners should not panic
+	state := &IdleState{IsSystemIdle: true, SystemIdlePeriod: time.Minute}
+	detector.NotifyListeners(state)
+}
+
+func TestIdleDetector_NotifyNotIdle(t *testing.T) {
+	config := DefaultIdleConfig()
+	detector := NewIdleDetector(config)
+
+	listener := &mockIdleListener{}
+	detector.AddListener(listener)
+
+	// Notify with non-idle state
+	state := &IdleState{IsSystemIdle: false}
+	detector.NotifyListeners(state)
+
+	if listener.systemIdleCalls != 0 {
+		t.Errorf("systemIdleCalls = %d, want 0", listener.systemIdleCalls)
+	}
+}

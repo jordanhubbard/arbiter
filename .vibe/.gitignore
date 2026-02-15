@@ -1,0 +1,5 @@
+# Exclude conversation state files
+conversations/
+# Legacy SQLite files (for migration compatibility)
+*.sqlite
+*.sqlite-*

@@ -3,10 +3,14 @@ package decision
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jordanhubbard/loom/pkg/models"
 )
+
+// decisionCounter provides unique IDs for decisions created in the same second
+var decisionCounter atomic.Int64
 
 // Manager manages decision beads and decision-making
 type Manager struct {
@@ -27,7 +31,7 @@ func (m *Manager) CreateDecision(question, parentBeadID, requesterID string, opt
 	defer m.mu.Unlock()
 
 	// Generate decision ID
-	decisionID := fmt.Sprintf("bd-dec-%d", time.Now().Unix())
+	decisionID := fmt.Sprintf("bd-dec-%d-%d", time.Now().Unix(), decisionCounter.Add(1))
 
 	// Create base bead
 	bead := &models.Bead{

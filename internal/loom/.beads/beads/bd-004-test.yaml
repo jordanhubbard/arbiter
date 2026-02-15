@@ -1,0 +1,26 @@
+entitymetadata:
+    schemaversion: ""
+    attributes: {}
+    migratedat: null
+    migratedfrom: ""
+id: bd-004
+type: task
+title: Test
+description: desc
+status: open
+priority: 3
+projectid: proj-9
+assignedto: agent-1771115228-Engineering Manager (Default)
+blockedby: []
+blocks: []
+relatedto: []
+parent: ""
+children: []
+tags: []
+context: {}
+duedate: null
+milestoneid: ""
+estimatedtime: 0
+createdat: 2026-02-14T16:27:08.900565-08:00
+updatedat: 2026-02-14T16:27:08.902071-08:00
+closedat: null
