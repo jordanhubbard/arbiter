@@ -2,6 +2,7 @@ package temporal
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
@@ -384,5 +385,191 @@ func TestMotivationOptionsJSON(t *testing.T) {
 	}
 	if decoded.WakeAgent != opts.WakeAgent {
 		t.Errorf("WakeAgent: expected %v, got %v", opts.WakeAgent, decoded.WakeAgent)
+	}
+}
+
+func TestTemporalInstructionDefaults(t *testing.T) {
+	// Test instruction with minimal fields
+	instr := TemporalInstruction{
+		Type: InstructionTypeActivity,
+		Name: "MinimalActivity",
+	}
+
+	if instr.Type != InstructionTypeActivity {
+		t.Errorf("Type: expected ACTIVITY, got %v", instr.Type)
+	}
+
+	if instr.Retry != 0 {
+		t.Errorf("Retry: expected 0 (default), got %d", instr.Retry)
+	}
+
+	if instr.Wait {
+		t.Error("Wait: expected false (default), got true")
+	}
+
+	if instr.Timeout != 0 {
+		t.Errorf("Timeout: expected 0 (default), got %v", instr.Timeout)
+	}
+}
+
+func TestTemporalInstructionResultError(t *testing.T) {
+	result := TemporalInstructionResult{
+		Instruction: TemporalInstruction{Type: InstructionTypeWorkflow, Name: "Failed"},
+		Success:     false,
+		Error:       "workflow execution failed",
+		ExecutedAt:  time.Now(),
+		Duration:    100 * time.Millisecond,
+	}
+
+	if result.Success {
+		t.Error("Expected Success to be false")
+	}
+
+	if result.Error == "" {
+		t.Error("Expected error message")
+	}
+
+	if !strings.Contains(result.Error, "failed") {
+		t.Errorf("Expected error to contain 'failed', got: %s", result.Error)
+	}
+}
+
+func TestTemporalDSLExecutionWithError(t *testing.T) {
+	exec := TemporalDSLExecution{
+		AgentID:        "agent-1",
+		Instructions:   []TemporalInstruction{{Type: InstructionTypeWorkflow, Name: "WF"}},
+		Results:        []TemporalInstructionResult{{Success: false, Error: "timeout"}},
+		ExecutionError: "execution timed out",
+		TotalDuration:  30 * time.Second,
+		ExecutedAt:     time.Now(),
+	}
+
+	if exec.ExecutionError == "" {
+		t.Error("Expected ExecutionError to be set")
+	}
+
+	if len(exec.Results) != 1 {
+		t.Errorf("Expected 1 result, got %d", len(exec.Results))
+	}
+
+	if exec.Results[0].Success {
+		t.Error("Expected result to be unsuccessful")
+	}
+}
+
+func TestWorkflowOptionsZeroValues(t *testing.T) {
+	opts := WorkflowOptions{}
+
+	if opts.ID != "" {
+		t.Errorf("Expected empty ID, got %q", opts.ID)
+	}
+
+	if opts.Timeout != 0 {
+		t.Errorf("Expected zero Timeout, got %v", opts.Timeout)
+	}
+
+	if opts.Retry != 0 {
+		t.Errorf("Expected zero Retry, got %d", opts.Retry)
+	}
+
+	if opts.Wait {
+		t.Error("Expected Wait to be false")
+	}
+}
+
+func TestActivityOptionsZeroValues(t *testing.T) {
+	opts := ActivityOptions{}
+
+	if opts.Name != "" {
+		t.Errorf("Expected empty Name, got %q", opts.Name)
+	}
+
+	if opts.Timeout != 0 {
+		t.Errorf("Expected zero Timeout, got %v", opts.Timeout)
+	}
+}
+
+func TestAllInstructionTypes(t *testing.T) {
+	types := []TemporalInstructionType{
+		InstructionTypeWorkflow,
+		InstructionTypeSchedule,
+		InstructionTypeQuery,
+		InstructionTypeSignal,
+		InstructionTypeActivity,
+		InstructionTypeCancelWF,
+		InstructionTypeListWF,
+		InstructionTypeMotivation,
+	}
+
+	for _, typ := range types {
+		instr := TemporalInstruction{Type: typ, Name: "test"}
+		if instr.Type != typ {
+			t.Errorf("Type mismatch: expected %v, got %v", typ, instr.Type)
+		}
+	}
+}
+
+func TestTemporalInstructionComplexInput(t *testing.T) {
+	instr := TemporalInstruction{
+		Type: InstructionTypeWorkflow,
+		Name: "ComplexWorkflow",
+		Input: map[string]interface{}{
+			"string": "value",
+			"number": 42,
+			"bool":   true,
+			"nested": map[string]interface{}{
+				"key": "nested-value",
+			},
+			"array": []interface{}{1, 2, 3},
+		},
+	}
+
+	data, err := json.Marshal(instr)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	var decoded TemporalInstruction
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if decoded.Input["string"] != "value" {
+		t.Error("String input not preserved")
+	}
+
+	if decoded.Input["number"] != float64(42) {
+		t.Error("Number input not preserved")
+	}
+
+	if decoded.Input["bool"] != true {
+		t.Error("Bool input not preserved")
+	}
+}
+
+func TestScheduleOptionsWithInterval(t *testing.T) {
+	opts := ScheduleOptions{
+		Name:     "hourly",
+		Workflow: "HourlyTask",
+		Interval: 1 * time.Hour,
+	}
+
+	if opts.Interval != time.Hour {
+		t.Errorf("Expected interval 1h, got %v", opts.Interval)
+	}
+
+	// Test with different intervals
+	intervals := []time.Duration{
+		1 * time.Minute,
+		5 * time.Minute,
+		1 * time.Hour,
+		24 * time.Hour,
+	}
+
+	for _, interval := range intervals {
+		opts.Interval = interval
+		if opts.Interval != interval {
+			t.Errorf("Interval not set correctly: expected %v, got %v", interval, opts.Interval)
+		}
 	}
 }

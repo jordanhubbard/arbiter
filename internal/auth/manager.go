@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -184,9 +185,11 @@ func (m *Manager) CreateAPIKey(userID string, req CreateAPIKeyRequest) (*CreateA
 	keyHash, _ := bcrypt.GenerateFromPassword([]byte(keyValue), bcrypt.DefaultCost)
 
 	var expiresAt *time.Time
+	var expiresAtValue time.Time
 	if req.ExpiresIn > 0 {
 		exp := time.Now().Add(time.Duration(req.ExpiresIn) * time.Second)
 		expiresAt = &exp
+		expiresAtValue = exp
 	}
 
 	apiKey := &APIKey{
@@ -197,7 +200,7 @@ func (m *Manager) CreateAPIKey(userID string, req CreateAPIKeyRequest) (*CreateA
 		KeyHash:     string(keyHash),
 		Permissions: req.Permissions,
 		IsActive:    true,
-		ExpiresAt:   *expiresAt,
+		ExpiresAt:   expiresAtValue,
 		CreatedAt:   time.Now(),
 	}
 
@@ -335,8 +338,13 @@ func (m *Manager) HasPermission(claims *Claims, permission string) bool {
 			return true
 		}
 		// Check for resource wildcard (e.g., "agents:*")
-		if p == permission[:len(permission)-len("read")-len("write")-len("delete")-len("admin")]+"*" {
-			return true
+		// Extract resource part (before :) and check if permission matches with wildcard
+		parts := strings.Split(permission, ":")
+		if len(parts) == 2 {
+			resourceWildcard := parts[0] + ":*"
+			if p == resourceWildcard {
+				return true
+			}
 		}
 	}
 	return false

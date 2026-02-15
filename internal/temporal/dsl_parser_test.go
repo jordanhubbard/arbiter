@@ -258,3 +258,148 @@ func TestDurationParsing(t *testing.T) {
 		})
 	}
 }
+
+// TestParseTemporalDSL_EmptyInput tests empty input
+func TestParseTemporalDSL_EmptyInput(t *testing.T) {
+	instructions, cleaned, err := ParseTemporalDSL("")
+	if err != nil {
+		t.Fatalf("ParseTemporalDSL('') should not error: %v", err)
+	}
+
+	if len(instructions) != 0 {
+		t.Errorf("Expected 0 instructions for empty input, got %d", len(instructions))
+	}
+
+	if cleaned != "" {
+		t.Errorf("Expected empty cleaned text, got %q", cleaned)
+	}
+}
+
+// TestParseTemporalDSL_MultipleBlocks tests multiple temporal blocks
+func TestParseTemporalDSL_MultipleBlocks(t *testing.T) {
+	text := `Text 1
+<temporal>
+WORKFLOW: First
+END
+</temporal>
+Text 2
+<temporal>
+WORKFLOW: Second
+END
+</temporal>
+Text 3`
+
+	instructions, cleaned, err := ParseTemporalDSL(text)
+	if err != nil {
+		t.Fatalf("ParseTemporalDSL failed: %v", err)
+	}
+
+	if len(instructions) != 2 {
+		t.Fatalf("Expected 2 instructions, got %d", len(instructions))
+	}
+
+	if instructions[0].Name != "First" {
+		t.Errorf("First instruction name = %q, want %q", instructions[0].Name, "First")
+	}
+
+	if instructions[1].Name != "Second" {
+		t.Errorf("Second instruction name = %q, want %q", instructions[1].Name, "Second")
+	}
+
+	if !strings.Contains(cleaned, "Text 1") || !strings.Contains(cleaned, "Text 2") || !strings.Contains(cleaned, "Text 3") {
+		t.Error("Cleaned text should contain all non-temporal text")
+	}
+}
+
+// TestParseTemporalInstruction_CaseInsensitive tests case insensitivity
+func TestParseTemporalInstruction_CaseInsensitive(t *testing.T) {
+	tests := []struct {
+		header string
+		want   TemporalInstructionType
+	}{
+		{"workflow: Test", InstructionTypeWorkflow},
+		{"WORKFLOW: Test", InstructionTypeWorkflow},
+		{"Workflow: Test", InstructionTypeWorkflow},
+		{"activity: Test", InstructionTypeActivity},
+		{"ACTIVITY: Test", InstructionTypeActivity},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.header, func(t *testing.T) {
+			instr, err := parseTemporalInstruction(tt.header)
+			if err != nil {
+				t.Fatalf("parseTemporalInstruction() error = %v", err)
+			}
+
+			if instr.Type != tt.want {
+				t.Errorf("Type = %v, want %v", instr.Type, tt.want)
+			}
+		})
+	}
+}
+
+// TestParseTemporalInstruction_RetryField tests retry field parsing
+func TestParseTemporalInstruction_RetryField(t *testing.T) {
+	text := `WORKFLOW: RetryTest
+RETRY: 5`
+
+	instr, err := parseTemporalInstruction(text)
+	if err != nil {
+		t.Fatalf("parseTemporalInstruction() error = %v", err)
+	}
+
+	if instr.Retry != 5 {
+		t.Errorf("Retry = %d, want %d", instr.Retry, 5)
+	}
+}
+
+// TestParseTemporalBlock_EmptyBlock tests parsing empty block
+func TestParseTemporalBlock_EmptyBlock(t *testing.T) {
+	instructions, err := parseTemporalBlock("")
+	if err != nil {
+		t.Fatalf("parseTemporalBlock('') error = %v", err)
+	}
+
+	if len(instructions) != 0 {
+		t.Errorf("Expected 0 instructions for empty block, got %d", len(instructions))
+	}
+}
+
+// TestParseTemporalBlock_OnlyEND tests block with only END keywords
+func TestParseTemporalBlock_OnlyEND(t *testing.T) {
+	instructions, err := parseTemporalBlock("END\nEND\nEND")
+	if err != nil {
+		t.Fatalf("parseTemporalBlock() error = %v", err)
+	}
+
+	if len(instructions) != 0 {
+		t.Errorf("Expected 0 instructions for block with only END, got %d", len(instructions))
+	}
+}
+
+// TestParseDuration_EdgeCases tests edge cases for duration parsing
+func TestParseDuration_EdgeCases(t *testing.T) {
+	tests := []struct {
+		input   string
+		want    time.Duration
+		wantErr bool
+	}{
+		{"immediate", 0, false},
+		{"now", 0, false},
+		{"100", 100 * time.Second, false},
+		{"invalid", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := parseDuration(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseDuration(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("parseDuration(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
