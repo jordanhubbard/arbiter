@@ -152,6 +152,28 @@ func (e *Engine) GetNextNode(execution *WorkflowExecution, condition EdgeConditi
 	return nil, fmt.Errorf("target node not found: %s", targetNodeKey)
 }
 
+// shouldRedispatch determines if a bead should be redispatched immediately
+// based on the current workflow state and node type.
+func shouldRedispatch(exec *WorkflowExecution, node *WorkflowNode) string {
+	// Don't redispatch approval nodes (they wait for human decision)
+	if node.NodeType == NodeTypeApproval {
+		return "false"
+	}
+
+	// Only redispatch active workflows
+	if exec.Status != ExecutionStatusActive {
+		return "false"
+	}
+
+	// Don't redispatch if node has exhausted attempts
+	if exec.NodeAttemptCount >= node.MaxAttempts {
+		return "false"
+	}
+
+	// For task/commit/verify nodes, enable redispatch to allow multi-turn work
+	return "true"
+}
+
 // AdvanceWorkflow moves the workflow to the next node based on condition
 func (e *Engine) AdvanceWorkflow(executionID string, condition EdgeCondition, agentID string, resultData map[string]string) error {
 	exec, err := e.db.GetWorkflowExecution(executionID)
@@ -205,7 +227,8 @@ func (e *Engine) AdvanceWorkflow(executionID string, condition EdgeCondition, ag
 		// Update bead context
 		updates := map[string]interface{}{
 			"context": map[string]string{
-				"workflow_status": string(ExecutionStatusCompleted),
+				"workflow_status":      string(ExecutionStatusCompleted),
+				"redispatch_requested": "false",
 			},
 		}
 		if err := e.beads.UpdateBead(exec.BeadID, updates); err != nil {
@@ -245,9 +268,10 @@ func (e *Engine) AdvanceWorkflow(executionID string, condition EdgeCondition, ag
 	// Update bead context with current node
 	updates := map[string]interface{}{
 		"context": map[string]string{
-			"workflow_node":   nextNode.NodeKey,
-			"workflow_status": string(exec.Status),
-			"cycle_count":     fmt.Sprintf("%d", exec.CycleCount),
+			"workflow_node":        nextNode.NodeKey,
+			"workflow_status":      string(exec.Status),
+			"cycle_count":          fmt.Sprintf("%d", exec.CycleCount),
+			"redispatch_requested": shouldRedispatch(exec, nextNode),
 		},
 	}
 
