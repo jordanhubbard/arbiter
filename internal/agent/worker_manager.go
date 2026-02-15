@@ -219,7 +219,39 @@ func (m *WorkerManager) UpdateAgentProject(id, projectID string) error {
 	return nil
 }
 
+// deriveRoleFromPersonaName infers workflow role from persona name (Gap #3)
+// Maps persona keywords to standardized workflow role names for role-based routing
 func deriveRoleFromPersonaName(personaName string) string {
+	personaLower := strings.ToLower(personaName)
+
+	// Mapping from persona keywords to workflow roles
+	roleMap := map[string]string{
+		"qa":                  "QA",
+		"qa-engineer":         "QA",
+		"quality-assurance":   "QA",
+		"engineering-manager": "Engineering Manager",
+		"eng-manager":         "Engineering Manager",
+		"product-manager":     "Product Manager",
+		"pm":                  "Product Manager",
+		"web-designer":        "Web Designer",
+		"designer":            "Web Designer",
+		"backend-engineer":    "Backend Engineer",
+		"backend":             "Backend Engineer",
+		"frontend-engineer":   "Frontend Engineer",
+		"frontend":            "Frontend Engineer",
+		"code-reviewer":       "Code Reviewer",
+		"reviewer":            "Code Reviewer",
+		"ceo":                 "CEO",
+	}
+
+	// Check for matches (most specific first)
+	for keyword, role := range roleMap {
+		if strings.Contains(personaLower, keyword) {
+			return role
+		}
+	}
+
+	// No match - extract persona name as fallback
 	personaName = strings.TrimSpace(personaName)
 	if strings.HasPrefix(personaName, "default/") {
 		return strings.TrimPrefix(personaName, "default/")
